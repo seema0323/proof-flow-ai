@@ -1,5 +1,6 @@
 require("dotenv").config();
 const authMiddleware = require("./middleware/authMiddleware");
+const projectRoutes = require("./routes/projectRoutes");
 const authRoutes = require("./routes/authRoutes");
 const express = require("express");
 const bcrypt = require("bcryptjs");
@@ -104,7 +105,7 @@ app.get("/protected", authMiddleware, (req, res) => {
   });
 });
 app.use("/api/auth", authRoutes);
-
+app.use("/api/projects", projectRoutes);
 app.listen(5000, () => {
   console.log("ProofFlow backend running on port 5000");
 });
