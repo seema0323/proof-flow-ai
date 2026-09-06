@@ -18,6 +18,19 @@ const projectSchema = new mongoose.Schema(
       ref: "User",
       required: true,
     },
+    members: [
+  {
+    user: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+    },
+    role: {
+      type: String,
+      enum: ["owner", "member"],
+      default: "member",
+    },
+  },
+],
 
     status: {
       type: String,
