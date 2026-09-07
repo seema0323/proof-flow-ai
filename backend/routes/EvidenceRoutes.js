@@ -73,6 +73,12 @@ router.get("/:taskId", authMiddleware, async (req, res) => {
 
     const project = await Project.findById(task.project);
 
+    if (!project) {
+      return res.status(404).json({
+        message: "Project not found",
+      });
+    }
+
     const isOwner = project.owner.toString() === req.user.userId;
 
     const isMember = project.members.some(
@@ -98,6 +104,49 @@ router.get("/:taskId", authMiddleware, async (req, res) => {
   } catch (error) {
     res.status(500).json({
       message: "Failed to fetch evidence",
+      error: error.message,
+    });
+  }
+});
+
+// Verify or Reject Evidence
+router.patch("/:evidenceId/verify", authMiddleware, async (req, res) => {
+  try {
+    const { status } = req.body;
+
+    if (!["verified", "rejected"].includes(status)) {
+      return res.status(400).json({
+        message: "Status must be verified or rejected",
+      });
+    }
+
+    const evidence = await Evidence.findById(req.params.evidenceId);
+
+    if (!evidence) {
+      return res.status(404).json({
+        message: "Evidence not found",
+      });
+    }
+
+    const task = await Task.findById(evidence.task);
+    const project = await Project.findById(task.project);
+
+    if (project.owner.toString() !== req.user.userId) {
+      return res.status(403).json({
+        message: "Only project owner can verify evidence",
+      });
+    }
+
+    evidence.verificationStatus = status;
+    await evidence.save();
+
+    res.json({
+      message: `Evidence ${status} successfully`,
+      evidence,
+    });
+  } catch (error) {
+    res.status(500).json({
+      message: "Failed to verify evidence",
       error: error.message,
     });
   }
