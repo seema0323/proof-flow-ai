@@ -100,4 +100,49 @@ router.patch("/:taskId/status", authMiddleware, async (req, res) => {
     });
   }
 });
+// Claim Task Completion
+router.patch("/:taskId/claim-complete", authMiddleware, async (req, res) => {
+  try {
+    const task = await Task.findById(req.params.taskId);
+
+    if (!task) {
+      return res.status(404).json({
+        message: "Task not found",
+      });
+    }
+
+    const project = await Project.findById(task.project);
+
+    if (!project) {
+      return res.status(404).json({
+        message: "Project not found",
+      });
+    }
+
+    const isOwner = project.owner.toString() === req.user.userId;
+
+    const isAssignedUser =
+      task.assignedTo &&
+      task.assignedTo.toString() === req.user.userId;
+
+    if (!isOwner && !isAssignedUser) {
+      return res.status(403).json({
+        message: "Only owner or assigned member can claim completion",
+      });
+    }
+
+    task.completionClaimed = true;
+    await task.save();
+
+    res.json({
+      message: "Task completion claimed successfully",
+      task,
+    });
+  } catch (error) {
+    res.status(500).json({
+      message: "Failed to claim task completion",
+      error: error.message,
+    });
+  }
+});
 module.exports = router;

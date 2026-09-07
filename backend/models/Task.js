@@ -29,6 +29,10 @@ const taskSchema = new mongoose.Schema(
       enum: ["todo", "in-progress", "completed"],
       default: "todo",
     },
+    completionClaimed: {
+  type: Boolean,
+  default: false,
+},
 
     deadline: {
       type: Date,
