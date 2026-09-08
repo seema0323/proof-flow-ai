@@ -152,5 +152,70 @@ router.post("/:projectId/members", authMiddleware, async (req, res) => {
     });
   }
 });
+// Get Project Health / Progress
+router.get("/:projectId/health", authMiddleware, async (req, res) => {
+  try {
+    const project = await Project.findOne({
+      _id: req.params.projectId,
+      $or: [
+        { owner: req.user.userId },
+        { "members.user": req.user.userId },
+      ],
+    });
+
+    if (!project) {
+      return res.status(404).json({
+        message: "Project not found or access denied",
+      });
+    }
+
+    const Task = require("../models/Task");
+    const Evidence = require("../models/Evidence");
+
+    const tasks = await Task.find({ project: req.params.projectId });
+
+    const totalTasks = tasks.length;
+    const completedTasks = tasks.filter(
+      (task) => task.status === "completed"
+    ).length;
+
+    const inProgressTasks = tasks.filter(
+      (task) => task.status === "in-progress"
+    ).length;
+
+    const claimedTasks = tasks.filter(
+      (task) => task.completionClaimed === true
+    ).length;
+
+    const taskIds = tasks.map((task) => task._id);
+
+    const verifiedEvidence = await Evidence.countDocuments({
+      task: { $in: taskIds },
+      verificationStatus: "verified",
+    });
+
+    const progress =
+      totalTasks === 0
+        ? 0
+        : Math.round((completedTasks / totalTasks) * 100);
+
+    res.json({
+      message: "Project health fetched successfully",
+      health: {
+        totalTasks,
+        completedTasks,
+        inProgressTasks,
+        claimedTasks,
+        verifiedEvidence,
+        progress,
+      },
+    });
+  } catch (error) {
+    res.status(500).json({
+      message: "Failed to fetch project health",
+      error: error.message,
+    });
+  }
+});
 
 module.exports = router;
