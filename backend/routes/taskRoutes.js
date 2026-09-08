@@ -5,6 +5,7 @@ const authMiddleware = require("../middleware/authMiddleware");
 
 const router = express.Router();
 
+// Create Task - only owner
 router.post("/", authMiddleware, async (req, res) => {
   try {
     const project = await Project.findOne({
@@ -16,6 +17,20 @@ router.post("/", authMiddleware, async (req, res) => {
       return res.status(404).json({
         message: "Project not found or access denied",
       });
+    }
+
+    if (req.body.assignedTo) {
+      const isMember = project.members.some(
+        (member) =>
+          member.user &&
+          member.user.toString() === req.body.assignedTo
+      );
+
+      if (!isMember) {
+        return res.status(400).json({
+          message: "Assigned user is not a member of this project",
+        });
+      }
     }
 
     const task = await Task.create({
@@ -37,11 +52,16 @@ router.post("/", authMiddleware, async (req, res) => {
     });
   }
 });
+
+// Get Project Tasks - owner OR member
 router.get("/:projectId", authMiddleware, async (req, res) => {
   try {
     const project = await Project.findOne({
       _id: req.params.projectId,
-      owner: req.user.userId,
+      $or: [
+        { owner: req.user.userId },
+        { "members.user": req.user.userId },
+      ],
     });
 
     if (!project) {
@@ -52,7 +72,7 @@ router.get("/:projectId", authMiddleware, async (req, res) => {
 
     const tasks = await Task.find({
       project: req.params.projectId,
-    });
+    }).populate("assignedTo", "name email");
 
     res.json({
       message: "Tasks fetched successfully",
@@ -65,8 +85,18 @@ router.get("/:projectId", authMiddleware, async (req, res) => {
     });
   }
 });
+
+// Update Task Status
 router.patch("/:taskId/status", authMiddleware, async (req, res) => {
   try {
+    const allowedStatus = ["todo", "in-progress", "completed"];
+
+    if (!allowedStatus.includes(req.body.status)) {
+      return res.status(400).json({
+        message: "Invalid task status",
+      });
+    }
+
     const task = await Task.findById(req.params.taskId);
 
     if (!task) {
@@ -75,14 +105,23 @@ router.patch("/:taskId/status", authMiddleware, async (req, res) => {
       });
     }
 
-    const project = await Project.findOne({
-      _id: task.project,
-      owner: req.user.userId,
-    });
+    const project = await Project.findById(task.project);
 
     if (!project) {
+      return res.status(404).json({
+        message: "Project not found",
+      });
+    }
+
+    const isOwner = project.owner.toString() === req.user.userId;
+
+    const isAssignedUser =
+      task.assignedTo &&
+      task.assignedTo.toString() === req.user.userId;
+
+    if (!isOwner && !isAssignedUser) {
       return res.status(403).json({
-        message: "Access denied",
+        message: "Only owner or assigned member can update task",
       });
     }
 
@@ -100,6 +139,7 @@ router.patch("/:taskId/status", authMiddleware, async (req, res) => {
     });
   }
 });
+
 // Claim Task Completion
 router.patch("/:taskId/claim-complete", authMiddleware, async (req, res) => {
   try {
@@ -145,4 +185,5 @@ router.patch("/:taskId/claim-complete", authMiddleware, async (req, res) => {
     });
   }
 });
+
 module.exports = router;
