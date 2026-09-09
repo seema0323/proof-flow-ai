@@ -112,7 +112,7 @@ router.get("/:taskId", authMiddleware, async (req, res) => {
 // Verify or Reject Evidence
 router.patch("/:evidenceId/verify", authMiddleware, async (req, res) => {
   try {
-    const { status } = req.body;
+   const { status, score } = req.body;
 
     if (!["verified", "rejected"].includes(status)) {
       return res.status(400).json({
@@ -138,6 +138,10 @@ router.patch("/:evidenceId/verify", authMiddleware, async (req, res) => {
     }
 
     evidence.verificationStatus = status;
+    evidence.verificationScore = score;
+    if (score !== undefined) {
+ 
+}
     await evidence.save();
 
     res.json({

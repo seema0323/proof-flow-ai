@@ -40,6 +40,12 @@ const evidenceSchema = new mongoose.Schema(
       enum: ["pending", "verified", "rejected"],
       default: "pending",
     },
+    verificationScore: {
+  type: Number,
+  min: 0,
+  max: 100,
+  default: 0,
+},
   },
   { timestamps: true }
 );
