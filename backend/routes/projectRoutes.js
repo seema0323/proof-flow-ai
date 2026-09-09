@@ -218,6 +218,28 @@ router.get("/:projectId/health", authMiddleware, async (req, res) => {
         : Math.round(
             (verifiedTaskIds.length / totalTasks) * 100
           );
+          let riskLevel = "low";
+
+const today = new Date();
+
+const overdueTasks = tasks.filter(
+  (task) =>
+    task.deadline &&
+    new Date(task.deadline) < today &&
+    task.status !== "completed"
+).length;
+
+const unverifiedClaims = claimedTasks - verifiedTaskIds.length;
+
+if (overdueTasks >= 2 || unverifiedClaims >= 2) {
+  riskLevel = "high";
+} else if (
+  overdueTasks === 1 ||
+  unverifiedClaims === 1 ||
+  verifiedProgress < 50
+) {
+  riskLevel = "medium";
+}
 
     res.json({
       message: "Project health fetched successfully",
@@ -230,6 +252,9 @@ router.get("/:projectId/health", authMiddleware, async (req, res) => {
         progress,
         claimedProgress,
         verifiedProgress,
+        overdueTasks,
+unverifiedClaims,
+riskLevel,
       },
     });
   } catch (error) {
