@@ -1,11 +1,13 @@
 const express = require("express");
 const Project = require("../models/Project");
 const User = require("../models/User");
+const Task = require("../models/Task");
+const Evidence = require("../models/Evidence");
 const authMiddleware = require("../middleware/authMiddleware");
 
 const router = express.Router();
 
-// Create Project
+// ================= CREATE PROJECT =================
 router.post("/", authMiddleware, async (req, res) => {
   try {
     const project = await Project.create({
@@ -26,7 +28,7 @@ router.post("/", authMiddleware, async (req, res) => {
   }
 });
 
-// Get Projects where user is owner OR member
+// ================= GET USER PROJECTS =================
 router.get("/", authMiddleware, async (req, res) => {
   try {
     const projects = await Project.find({
@@ -50,7 +52,7 @@ router.get("/", authMiddleware, async (req, res) => {
   }
 });
 
-// Get Project Members
+// ================= GET PROJECT MEMBERS =================
 router.get("/:projectId/members", authMiddleware, async (req, res) => {
   try {
     const project = await Project.findOne({
@@ -86,7 +88,7 @@ router.get("/:projectId/members", authMiddleware, async (req, res) => {
   }
 });
 
-// Add Member to Project
+// ================= ADD MEMBER =================
 router.post("/:projectId/members", authMiddleware, async (req, res) => {
   try {
     const { userId, role } = req.body;
@@ -152,7 +154,8 @@ router.post("/:projectId/members", authMiddleware, async (req, res) => {
     });
   }
 });
-// Get Project Health / Progress
+
+// ================= PROJECT HEALTH =================
 router.get("/:projectId/health", authMiddleware, async (req, res) => {
   try {
     const project = await Project.findOne({
@@ -169,12 +172,12 @@ router.get("/:projectId/health", authMiddleware, async (req, res) => {
       });
     }
 
-    const Task = require("../models/Task");
-    const Evidence = require("../models/Evidence");
-
-    const tasks = await Task.find({ project: req.params.projectId });
+    const tasks = await Task.find({
+      project: req.params.projectId,
+    });
 
     const totalTasks = tasks.length;
+
     const completedTasks = tasks.filter(
       (task) => task.status === "completed"
     ).length;
@@ -199,6 +202,23 @@ router.get("/:projectId/health", authMiddleware, async (req, res) => {
         ? 0
         : Math.round((completedTasks / totalTasks) * 100);
 
+    const claimedProgress =
+      totalTasks === 0
+        ? 0
+        : Math.round((claimedTasks / totalTasks) * 100);
+
+    const verifiedTaskIds = await Evidence.distinct("task", {
+      task: { $in: taskIds },
+      verificationStatus: "verified",
+    });
+
+    const verifiedProgress =
+      totalTasks === 0
+        ? 0
+        : Math.round(
+            (verifiedTaskIds.length / totalTasks) * 100
+          );
+
     res.json({
       message: "Project health fetched successfully",
       health: {
@@ -208,6 +228,8 @@ router.get("/:projectId/health", authMiddleware, async (req, res) => {
         claimedTasks,
         verifiedEvidence,
         progress,
+        claimedProgress,
+        verifiedProgress,
       },
     });
   } catch (error) {
