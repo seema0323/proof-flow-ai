@@ -247,4 +247,62 @@ router.patch("/evidence/:evidenceId/auto-verify", authMiddleware, async (req, re
     });
   }
 });
+// Get GitHub Pull Requests
+router.get("/:projectId/pull-requests", authMiddleware, async (req, res) => {
+  try {
+    const project = await Project.findOne({
+      _id: req.params.projectId,
+      $or: [
+        { owner: req.user.userId },
+        { "members.user": req.user.userId },
+      ],
+    });
+
+    if (!project) {
+      return res.status(404).json({
+        message: "Project not found or access denied",
+      });
+    }
+
+    if (!project.githubOwner || !project.githubRepoName) {
+      return res.status(400).json({
+        message: "GitHub repository is not connected",
+      });
+    }
+
+    const response = await axios.get(
+      `https://api.github.com/repos/${project.githubOwner}/${project.githubRepoName}/pulls`,
+      {
+        params: {
+          state: "all",
+          per_page: 20,
+        },
+        headers: {
+          Accept: "application/vnd.github+json",
+        },
+      }
+    );
+
+    const pullRequests = response.data.map((pr) => ({
+      number: pr.number,
+      title: pr.title,
+      state: pr.state,
+      author: pr.user?.login || "Unknown",
+      createdAt: pr.created_at,
+      mergedAt: pr.merged_at,
+      url: pr.html_url,
+    }));
+
+    res.json({
+      message: "GitHub pull requests fetched successfully",
+      total: pullRequests.length,
+      pullRequests,
+    });
+  } catch (error) {
+    res.status(500).json({
+      message: "Failed to fetch GitHub pull requests",
+      error: error.response?.data?.message || error.message,
+    });
+  }
+});
 module.exports = router;
