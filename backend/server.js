@@ -1,5 +1,6 @@
 require("dotenv").config();
 const evidenceRoutes = require("./routes/EvidenceRoutes");
+const githubRoutes = require("./routes/githubRoutes");
 const taskRoutes = require("./routes/taskRoutes");
 const authMiddleware = require("./middleware/authMiddleware");
 const projectRoutes = require("./routes/projectRoutes");
@@ -110,6 +111,7 @@ app.use("/api/auth", authRoutes);
 app.use("/api/projects", projectRoutes);
 app.use("/api/tasks", taskRoutes);
 app.use("/api/evidence", evidenceRoutes);
+app.use("/api/github", githubRoutes);
 app.listen(5000, () => {
   console.log("ProofFlow backend running on port 5000");
 });
