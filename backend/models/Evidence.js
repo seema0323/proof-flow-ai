@@ -50,6 +50,10 @@ const evidenceSchema = new mongoose.Schema(
   max: 100,
   default: 0,
 },
+verificationReason: {
+  type: String,
+  default: "",
+},
   },
   { timestamps: true }
 );

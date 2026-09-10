@@ -1,4 +1,5 @@
 const express = require("express");
+const Evidence = require("../models/Evidence");
 const axios = require("axios");
 const Project = require("../models/Project");
 const authMiddleware = require("../middleware/authMiddleware");
@@ -168,6 +169,81 @@ router.get("/:projectId/verify-commit/:sha", authMiddleware, async (req, res) =>
     res.status(500).json({
       message: "Failed to verify GitHub commit",
       error: error.response?.data?.message || error.message,
+    });
+  }
+});
+// Auto verify evidence using GitHub commit
+router.patch("/evidence/:evidenceId/auto-verify", authMiddleware, async (req, res) => {
+  try {
+    const evidence = await Evidence.findById(req.params.evidenceId);
+
+    if (!evidence) {
+      return res.status(404).json({
+        message: "Evidence not found",
+      });
+    }
+
+    if (!evidence.githubCommitSha) {
+      return res.status(400).json({
+        message: "No GitHub commit SHA found in evidence",
+      });
+    }
+
+    const task = await require("../models/Task").findById(evidence.task);
+
+    if (!task) {
+      return res.status(404).json({
+        message: "Task not found",
+      });
+    }
+
+    const project = await Project.findById(task.project);
+
+    if (!project) {
+      return res.status(404).json({
+        message: "Project not found",
+      });
+    }
+
+    const isOwner = project.owner.toString() === req.user.userId;
+
+    if (!isOwner) {
+      return res.status(403).json({
+        message: "Only project owner can verify evidence",
+      });
+    }
+
+    await axios.get(
+      `https://api.github.com/repos/${project.githubOwner}/${project.githubRepoName}/commits/${evidence.githubCommitSha}`,
+      {
+        headers: {
+          Accept: "application/vnd.github+json",
+        },
+      }
+    );
+
+    evidence.verificationStatus = "verified";
+    evidence.verificationScore = 100;
+    evidence.verificationReason =
+      "Commit exists in the connected GitHub repository";
+
+    await evidence.save();
+
+    res.json({
+      message: "Evidence automatically verified",
+      evidence,
+    });
+  } catch (error) {
+    if (error.response?.status === 404) {
+      return res.status(404).json({
+        message: "GitHub commit not found",
+        verified: false,
+      });
+    }
+
+    res.status(500).json({
+      message: "Automatic verification failed",
+      error: error.message,
     });
   }
 });
