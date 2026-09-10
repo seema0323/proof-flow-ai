@@ -44,6 +44,7 @@ router.post("/", authMiddleware, async (req, res) => {
       submittedBy: req.user.userId,
       description: req.body.description,
       githubUrl: req.body.githubUrl || "",
+      githubCommitSha: req.body.githubCommitSha || "",
       deployedUrl: req.body.deployedUrl || "",
       fileUrl: req.body.fileUrl || "",
     });

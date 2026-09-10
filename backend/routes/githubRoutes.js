@@ -114,4 +114,61 @@ router.get("/:projectId/contributors", authMiddleware, async (req, res) => {
     });
   }
 });
+// Verify GitHub Commit
+router.get("/:projectId/verify-commit/:sha", authMiddleware, async (req, res) => {
+  try {
+    const project = await Project.findOne({
+      _id: req.params.projectId,
+      $or: [
+        { owner: req.user.userId },
+        { "members.user": req.user.userId },
+      ],
+    });
+
+    if (!project) {
+      return res.status(404).json({
+        message: "Project not found or access denied",
+      });
+    }
+
+    if (!project.githubOwner || !project.githubRepoName) {
+      return res.status(400).json({
+        message: "GitHub repository is not connected",
+      });
+    }
+
+    const response = await axios.get(
+      `https://api.github.com/repos/${project.githubOwner}/${project.githubRepoName}/commits/${req.params.sha}`,
+      {
+        headers: {
+          Accept: "application/vnd.github+json",
+        },
+      }
+    );
+
+    res.json({
+      message: "Commit verified successfully",
+      verified: true,
+      commit: {
+        sha: response.data.sha,
+        message: response.data.commit.message,
+        author: response.data.commit.author?.name || "Unknown",
+        date: response.data.commit.author?.date,
+        url: response.data.html_url,
+      },
+    });
+  } catch (error) {
+    if (error.response?.status === 404) {
+      return res.status(404).json({
+        message: "Commit not found in connected repository",
+        verified: false,
+      });
+    }
+
+    res.status(500).json({
+      message: "Failed to verify GitHub commit",
+      error: error.response?.data?.message || error.message,
+    });
+  }
+});
 module.exports = router;

@@ -24,6 +24,10 @@ const evidenceSchema = new mongoose.Schema(
       type: String,
       default: "",
     },
+    githubCommitSha: {
+  type: String,
+  default: "",
+},
 
     deployedUrl: {
       type: String,
