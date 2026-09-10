@@ -264,5 +264,57 @@ riskLevel,
     });
   }
 });
+// Connect GitHub Repository
+router.patch("/:projectId/github", authMiddleware, async (req, res) => {
+  try {
+    const { githubRepo } = req.body;
 
+    if (!githubRepo) {
+      return res.status(400).json({
+        message: "GitHub repository URL is required",
+      });
+    }
+
+    const project = await Project.findOne({
+      _id: req.params.projectId,
+      owner: req.user.userId,
+    });
+
+    if (!project) {
+      return res.status(404).json({
+        message: "Project not found or access denied",
+      });
+    }
+
+    const match = githubRepo.match(
+      /^https?:\/\/github\.com\/([^/]+)\/([^/]+?)(?:\.git)?\/?$/
+    );
+
+    if (!match) {
+      return res.status(400).json({
+        message: "Invalid GitHub repository URL",
+      });
+    }
+
+    project.githubRepo = githubRepo;
+    project.githubOwner = match[1];
+    project.githubRepoName = match[2];
+
+    await project.save();
+
+    res.json({
+      message: "GitHub repository connected successfully",
+      github: {
+        url: project.githubRepo,
+        owner: project.githubOwner,
+        repo: project.githubRepoName,
+      },
+    });
+  } catch (error) {
+    res.status(500).json({
+      message: "Failed to connect GitHub repository",
+      error: error.message,
+    });
+  }
+});
 module.exports = router;

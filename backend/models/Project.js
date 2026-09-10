@@ -37,6 +37,23 @@ const projectSchema = new mongoose.Schema(
       enum: ["active", "completed", "on-hold"],
       default: "active",
     },
+
+githubRepo: {
+  type: String,
+  default: "",
+},
+
+githubOwner: {
+  type: String,
+  default: "",
+},
+
+githubRepoName: {
+  type: String,
+  default: "",
+},
+
+
   },
   { timestamps: true }
 );
