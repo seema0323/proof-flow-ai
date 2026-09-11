@@ -1,20 +1,31 @@
 require("dotenv").config();
-const evidenceRoutes = require("./routes/EvidenceRoutes");
-const githubRoutes = require("./routes/githubRoutes");
-const taskRoutes = require("./routes/taskRoutes");
-const authMiddleware = require("./middleware/authMiddleware");
-const projectRoutes = require("./routes/projectRoutes");
-const authRoutes = require("./routes/authRoutes");
+
 const express = require("express");
+const cors = require("cors");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 
 const connectDB = require("./config/db");
 const User = require("./models/User");
 
+const authMiddleware = require("./middleware/authMiddleware");
+const authRoutes = require("./routes/authRoutes");
+const projectRoutes = require("./routes/projectRoutes");
+const taskRoutes = require("./routes/taskRoutes");
+const evidenceRoutes = require("./routes/EvidenceRoutes");
+const githubRoutes = require("./routes/githubRoutes");
+
 const app = express();
 
+// Allow frontend to call backend
+app.use(cors());
+
+// Parse JSON request bodies
 app.use(express.json());
+
+
+
+
 
 connectDB();
 
