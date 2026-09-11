@@ -4,29 +4,39 @@ import {
   FolderKanban,
   CheckSquare,
   ShieldCheck,
-  BarChart3,
-  Bell,
+  Users,
   Settings,
-  Search,
 } from "lucide-react";
 import { FaGithub } from "react-icons/fa";
-import { getProjectHealth } from "./services/api";
+import {
+  getProjectHealth,
+  getProjects,
+  getTasks,
+} from "./services/api";
 
 function App() {
   const [health, setHealth] = useState(null);
+  const [projects, setProjects] = useState([]);
+  const [tasks, setTasks] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
   const projectId = "6a9bef510dd60e7bf06339e3";
-
-  // Temporary token for testing.
-  // Later login ke baad token automatically localStorage se aayega.
   const token = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2YTliZTZiNjJkOWMyM2EzYTQzOGQwMTYiLCJpYXQiOjE3ODkxMzY3ODMsImV4cCI6MTc4OTc0MTU4M30.lRNgzKch15_pI8UeavvK7CZf52n1VT2VeIbCvyIQh_A";
+
   useEffect(() => {
-    async function loadHealth() {
+    async function loadDashboard() {
       try {
-        const data = await getProjectHealth(projectId, token);
-        setHealth(data.health);
+        setError("");
+
+        const healthData = await getProjectHealth(projectId, token);
+        setHealth(healthData.health);
+
+        const projectData = await getProjects(token);
+        setProjects(projectData.projects || projectData);
+
+        const taskData = await getTasks(projectId, token);
+        setTasks(taskData.tasks || taskData);
       } catch (err) {
         setError(err.message);
       } finally {
@@ -34,120 +44,84 @@ function App() {
       }
     }
 
-    loadHealth();
+    loadDashboard();
   }, []);
 
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900">
       <div className="flex min-h-screen">
         {/* Sidebar */}
-        <aside className="relative hidden w-64 flex-shrink-0 border-r border-slate-200 bg-white lg:block">
-          <div className="flex h-16 items-center border-b border-slate-200 px-6">
+        <aside className="hidden w-64 border-r border-slate-200 bg-white p-5 lg:block">
+          <div className="mb-8 flex items-center gap-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-indigo-600 text-lg font-bold text-white">
+              P
+            </div>
+
             <div>
-              <h1 className="text-xl font-bold tracking-tight">ProofFlow AI</h1>
-              <p className="text-xs text-slate-500">Verify real work</p>
+              <h1 className="font-semibold">ProofFlow AI</h1>
+              <p className="text-xs text-slate-500">Work Verification</p>
             </div>
           </div>
 
-          <nav className="space-y-1 p-4">
-            <SidebarItem
-              icon={<LayoutDashboard size={18} />}
-              label="Overview"
-              active
-            />
-            <SidebarItem
-              icon={<FolderKanban size={18} />}
-              label="Projects"
-            />
-            <SidebarItem
-              icon={<CheckSquare size={18} />}
-              label="Tasks"
-            />
-            <SidebarItem
-              icon={<ShieldCheck size={18} />}
-              label="Verification"
-            />
-            <SidebarItem
-              icon={<FaGithub size={18} />}
-              label="GitHub Activity"
-            />
-            <SidebarItem
-              icon={<BarChart3 size={18} />}
-              label="Analytics"
-            />
+          <nav className="space-y-2">
+            <SidebarItem icon={<LayoutDashboard size={18} />} text="Dashboard" active />
+            <SidebarItem icon={<FolderKanban size={18} />} text="Projects" />
+            <SidebarItem icon={<CheckSquare size={18} />} text="Tasks" />
+            <SidebarItem icon={<ShieldCheck size={18} />} text="Verification" />
+            <SidebarItem icon={<FaGithub size={18} />} text="GitHub" />
+            <SidebarItem icon={<Users size={18} />} text="Team" />
+            <SidebarItem icon={<Settings size={18} />} text="Settings" />
           </nav>
-
-          <div className="absolute bottom-4 left-0 w-full px-4">
-            <SidebarItem
-              icon={<Settings size={18} />}
-              label="Settings"
-            />
-          </div>
         </aside>
 
         {/* Main */}
-        <div className="min-w-0 flex-1">
-          <header className="flex h-16 items-center justify-between border-b border-slate-200 bg-white px-4 md:px-8">
-            <div>
-              <p className="text-xs font-medium text-slate-400">WORKSPACE</p>
-              <h2 className="font-semibold text-slate-900">
-                Project Overview
-              </h2>
-            </div>
-
-            <div className="flex items-center gap-3">
-              <div className="hidden items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 md:flex">
-                <Search size={17} className="text-slate-400" />
-                <input
-                  type="text"
-                  placeholder="Search..."
-                  className="w-44 bg-transparent text-sm outline-none"
-                />
+        <div className="flex-1">
+          <header className="border-b border-slate-200 bg-white px-6 py-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-slate-500">Project Overview</p>
+                <h2 className="text-xl font-semibold">Dashboard</h2>
               </div>
 
-              <button className="rounded-xl border border-slate-200 bg-white p-2.5 transition hover:bg-slate-50">
-                <Bell size={18} />
-              </button>
-
-              <div className="flex h-9 w-9 items-center justify-center rounded-full bg-slate-900 text-sm font-semibold text-white">
+              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-slate-900 text-sm font-semibold text-white">
                 SY
               </div>
             </div>
           </header>
 
-          <main className="p-4 md:p-8">
+          <main className="p-6">
             <div className="mx-auto max-w-7xl">
               {/* Hero */}
-              <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm md:p-8">
-                <div className="inline-flex rounded-full bg-indigo-50 px-3 py-1 text-xs font-semibold text-indigo-600">
+              <section className="rounded-3xl border border-slate-200 bg-white p-7 shadow-sm">
+                <p className="mb-2 text-sm font-semibold text-indigo-600">
                   AI Work Verification Platform
-                </div>
+                </p>
 
-                <h3 className="mt-4 max-w-3xl text-3xl font-bold tracking-tight md:text-4xl">
-                  Don&apos;t just claim your work.
-                  <span className="text-indigo-600"> Prove it.</span>
-                </h3>
+                <h1 className="text-3xl font-bold tracking-tight md:text-4xl">
+                  Don't just claim your work. Prove it.
+                </h1>
 
-                <p className="mt-4 max-w-2xl text-sm leading-6 text-slate-500 md:text-base">
+                <p className="mt-3 max-w-3xl text-slate-500">
                   Track tasks, verify GitHub contributions, validate submitted
                   evidence and understand the real health of your project.
                 </p>
               </section>
 
-              {/* Status */}
+              {/* Loading */}
               {loading && (
                 <p className="mt-6 text-sm text-slate-500">
-                  Loading project health...
+                  Loading dashboard...
                 </p>
               )}
 
+              {/* Error */}
               {error && (
-                <p className="mt-6 text-sm font-medium text-red-600">
+                <p className="mt-6 rounded-xl bg-red-50 p-4 text-sm font-medium text-red-600">
                   {error}
                 </p>
               )}
 
-              {/* Real Backend Data */}
+              {/* Health Cards */}
               {health && (
                 <section className="mt-6 grid gap-4 md:grid-cols-2 lg:grid-cols-4">
                   <MetricCard
@@ -175,6 +149,88 @@ function App() {
                   />
                 </section>
               )}
+
+              {/* Projects + Tasks */}
+              <div className="mt-6 grid gap-6 lg:grid-cols-2">
+                {/* Projects */}
+                <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+                  <div className="mb-4 flex items-center justify-between">
+                    <h2 className="text-lg font-semibold">Projects</h2>
+
+                    <span className="text-sm text-slate-400">
+                      {projects.length} total
+                    </span>
+                  </div>
+
+                  <div className="space-y-3">
+                    {projects.length === 0 && !loading ? (
+                      <p className="text-sm text-slate-500">
+                        No projects found.
+                      </p>
+                    ) : (
+                      projects.map((project) => (
+                        <div
+                          key={project._id}
+                          className="rounded-xl border border-slate-200 p-4"
+                        >
+                          <h3 className="font-semibold">
+                            {project.name}
+                          </h3>
+
+                          <p className="mt-1 text-sm text-slate-500">
+                            {project.description}
+                          </p>
+
+                          <p className="mt-3 text-xs font-medium text-slate-600">
+                            Status: {capitalize(project.status)}
+                          </p>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </section>
+
+                {/* Tasks */}
+                <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+                  <div className="mb-4 flex items-center justify-between">
+                    <h2 className="text-lg font-semibold">Tasks</h2>
+
+                    <span className="text-sm text-slate-400">
+                      {tasks.length} total
+                    </span>
+                  </div>
+
+                  <div className="space-y-3">
+                    {tasks.length === 0 && !loading ? (
+                      <p className="text-sm text-slate-500">
+                        No tasks found.
+                      </p>
+                    ) : (
+                      tasks.map((task) => (
+                        <div
+                          key={task._id}
+                          className="rounded-xl border border-slate-200 p-4"
+                        >
+                          <div className="flex items-start justify-between gap-4">
+                            <h3 className="font-semibold">
+                              {task.title}
+                            </h3>
+
+                            <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-600">
+                              {capitalize(task.status)}
+                            </span>
+                          </div>
+
+                          <p className="mt-3 text-sm text-slate-500">
+                            Assigned to:{" "}
+                            {task.assignedTo?.name || "Unassigned"}
+                          </p>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </section>
+              </div>
             </div>
           </main>
         </div>
@@ -183,37 +239,38 @@ function App() {
   );
 }
 
-function SidebarItem({ icon, label, active = false }) {
+function SidebarItem({ icon, text, active }) {
   return (
-    <button
-      className={`flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition ${
+    <div
+      className={`flex cursor-pointer items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium ${
         active
-          ? "bg-slate-900 text-white shadow-sm"
-          : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
+          ? "bg-indigo-50 text-indigo-700"
+          : "text-slate-600 hover:bg-slate-50"
       }`}
     >
       {icon}
-      <span>{label}</span>
-    </button>
+      <span>{text}</span>
+    </div>
   );
 }
 
 function MetricCard({ title, value, description }) {
   return (
-    <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md">
+    <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
       <p className="text-sm font-medium text-slate-500">{title}</p>
 
-      <p className="mt-3 text-3xl font-bold tracking-tight text-slate-900">
+      <p className="mt-2 text-3xl font-bold tracking-tight">
         {value}
       </p>
 
-      <p className="mt-2 text-xs text-slate-400">{description}</p>
+      <p className="mt-2 text-sm text-slate-500">
+        {description}
+      </p>
     </div>
   );
 }
 
-function capitalize(value) {
-  if (!value) return "-";
+function capitalize(value = "") {
   return value.charAt(0).toUpperCase() + value.slice(1);
 }
 

@@ -1,16 +1,12 @@
 const API_BASE_URL = "http://localhost:5000";
 
-export async function getProjectHealth(projectId, token) {
-  const response = await fetch(
-    `${API_BASE_URL}/api/projects/${projectId}/health`,
-    {
-      method: "GET",
-      headers: {
-        Authorization: `Bearer ${token}`,
-        "Content-Type": "application/json",
-      },
-    }
-  );
+async function request(url, token) {
+  const response = await fetch(`${API_BASE_URL}${url}`, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
+    },
+  });
 
   const data = await response.json();
 
@@ -19,4 +15,16 @@ export async function getProjectHealth(projectId, token) {
   }
 
   return data;
+}
+
+export function getProjectHealth(projectId, token) {
+  return request(`/api/projects/${projectId}/health`, token);
+}
+
+export function getProjects(token) {
+  return request("/api/projects", token);
+}
+
+export function getTasks(projectId, token) {
+  return request(`/api/tasks/${projectId}`, token);
 }
