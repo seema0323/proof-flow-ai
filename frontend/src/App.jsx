@@ -12,6 +12,9 @@ import { FaGithub } from "react-icons/fa";
 import {
   getProjectHealth,
   getProjects,
+  createProject,
+  createTask,
+  updateTaskStatus,
   getTasks,
   getGitHubCommits,
   getGitHubContributors,
@@ -25,6 +28,19 @@ function App() {
   const [contributors, setContributors] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [showCreateTask, setShowCreateTask] = useState(false);
+
+const [newTask, setNewTask] = useState({
+  title: "",
+  description: "",
+  deadline: "",
+});
+  const [showCreateProject, setShowCreateProject] = useState(false);
+
+const [newProject, setNewProject] = useState({
+  name: "",
+  description: "",
+});
 
   const projectId = "6a9bef510dd60e7bf06339e3";
 
@@ -63,9 +79,219 @@ function App() {
 
     loadDashboard();
   }, []);
+  async function handleCreateProject(e) {
+  e.preventDefault();
 
+  try {
+    const data = await createProject(newProject, token);
+
+    setProjects((prev) => [data.project || data, ...prev]);
+
+    setNewProject({
+      name: "",
+      description: "",
+    });
+
+    setShowCreateProject(false);
+  } catch (err) {
+    setError(err.message);
+  }
+}
+async function handleCreateTask(e) {
+  e.preventDefault();
+
+  try {
+    const data = await createTask(
+      {
+        ...newTask,
+        projectId: projectId,
+      },
+      token
+    );
+
+    setTasks((prev) => [data.task, ...prev]);
+
+    setNewTask({
+      title: "",
+      description: "",
+      deadline: "",
+    });
+
+    setShowCreateTask(false);
+  } catch (err) {
+    setError(err.message);
+  }
+}
+async function handleStatusChange(taskId, status) {
+  try {
+    const data = await updateTaskStatus(taskId, status, token);
+
+    setTasks((prev) =>
+      prev.map((task) =>
+        task._id === taskId ? data.task : task
+      )
+    );
+  } catch (err) {
+    setError(err.message);
+  }
+}
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900">
+      {showCreateProject && (
+  <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
+    <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl">
+      <div className="mb-5 flex items-center justify-between">
+        <div>
+          <h3 className="text-lg font-semibold text-slate-900">
+            Create Project
+          </h3>
+          <p className="text-sm text-slate-500">
+            Start a new verified workspace
+          </p>
+        </div>
+
+        <button
+          onClick={() => setShowCreateProject(false)}
+          className="text-slate-400 hover:text-slate-700"
+        >
+          ✕
+        </button>
+      </div>
+
+      <form onSubmit={handleCreateProject} className="space-y-4">
+        <div>
+          <label className="mb-1 block text-sm font-medium">
+            Project Name
+          </label>
+
+          <input
+            type="text"
+            required
+            value={newProject.name}
+            onChange={(e) =>
+              setNewProject({
+                ...newProject,
+                name: e.target.value,
+              })
+            }
+            placeholder="ProofFlow AI"
+            className="w-full rounded-xl border border-slate-200 px-4 py-3 outline-none focus:border-indigo-500"
+          />
+        </div>
+
+        <div>
+          <label className="mb-1 block text-sm font-medium">
+            Description
+          </label>
+
+          <textarea
+            required
+            rows="4"
+            value={newProject.description}
+            onChange={(e) =>
+              setNewProject({
+                ...newProject,
+                description: e.target.value,
+              })
+            }
+            placeholder="What is this project about?"
+            className="w-full resize-none rounded-xl border border-slate-200 px-4 py-3 outline-none focus:border-indigo-500"
+          />
+        </div>
+
+        <div className="flex justify-end gap-3 pt-2">
+          <button
+            type="button"
+            onClick={() => setShowCreateProject(false)}
+            className="rounded-xl border border-slate-200 px-4 py-2 text-sm font-medium"
+          >
+            Cancel
+          </button>
+
+          <button
+            type="submit"
+            className="rounded-xl bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700"
+          >
+            Create Project
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+)}
+{showCreateTask && (
+  <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
+    <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl">
+      <div className="mb-5 flex items-center justify-between">
+        <div>
+          <h3 className="text-lg font-semibold">Create Task</h3>
+          <p className="text-sm text-slate-500">
+            Add a task to this project
+          </p>
+        </div>
+
+        <button
+          onClick={() => setShowCreateTask(false)}
+          className="text-slate-400 hover:text-slate-700"
+        >
+          ✕
+        </button>
+      </div>
+
+      <form onSubmit={handleCreateTask} className="space-y-4">
+        <input
+          required
+          type="text"
+          placeholder="Task title"
+          value={newTask.title}
+          onChange={(e) =>
+            setNewTask({ ...newTask, title: e.target.value })
+          }
+          className="w-full rounded-xl border border-slate-200 px-4 py-3 outline-none focus:border-indigo-500"
+        />
+
+        <textarea
+          rows="3"
+          placeholder="Task description"
+          value={newTask.description}
+          onChange={(e) =>
+            setNewTask({
+              ...newTask,
+              description: e.target.value,
+            })
+          }
+          className="w-full resize-none rounded-xl border border-slate-200 px-4 py-3 outline-none focus:border-indigo-500"
+        />
+
+        <input
+          type="date"
+          value={newTask.deadline}
+          onChange={(e) =>
+            setNewTask({ ...newTask, deadline: e.target.value })
+          }
+          className="w-full rounded-xl border border-slate-200 px-4 py-3 outline-none focus:border-indigo-500"
+        />
+
+        <div className="flex justify-end gap-3">
+          <button
+            type="button"
+            onClick={() => setShowCreateTask(false)}
+            className="rounded-xl border border-slate-200 px-4 py-2 text-sm"
+          >
+            Cancel
+          </button>
+
+          <button
+            type="submit"
+            className="rounded-xl bg-indigo-600 px-4 py-2 text-sm font-medium text-white"
+          >
+            Create Task
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+)}
       <div className="flex min-h-screen">
 
         {/* Sidebar */}
@@ -115,28 +341,38 @@ function App() {
             />
           </nav>
         </aside>
-
         {/* Main */}
-        <div className="flex-1">
-          <header className="border-b border-slate-200 bg-white px-6 py-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-slate-500">
-                  Project Overview
-                </p>
-                <h2 className="text-xl font-semibold">
-                  Dashboard
-                </h2>
-              </div>
+<div className="flex-1">
+  <header className="border-b border-slate-200 bg-white px-6 py-4">
+    <div className="flex items-center justify-between">
 
-              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-slate-900 text-sm font-semibold text-white">
-                SY
-              </div>
-            </div>
-          </header>
+      <div>
+        <p className="text-sm text-slate-500">
+          Project Overview
+        </p>
+        <h2 className="text-xl font-semibold">
+          Dashboard
+        </h2>
+      </div>
 
-          <main className="p-6">
-            <div className="mx-auto max-w-7xl">
+      <div className="flex items-center gap-3">
+        <button
+          onClick={() => setShowCreateProject(true)}
+          className="rounded-xl bg-indigo-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-indigo-700"
+        >
+          + Create Project
+        </button>
+
+        <div className="flex h-10 w-10 items-center justify-center rounded-full bg-slate-900 text-sm font-semibold text-white">
+          SY
+        </div>
+      </div>
+
+    </div>
+  </header>
+
+  <main className="p-6">
+   <div className="mx-auto max-w-7xl"></div>
 
               {/* Hero */}
               <section className="rounded-3xl border border-slate-200 bg-white p-7 shadow-sm">
@@ -242,51 +478,59 @@ function App() {
                   </div>
                 </section>
 
-                {/* Tasks */}
-                <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-                  <div className="mb-4 flex items-center justify-between">
-                    <h2 className="text-lg font-semibold">
-                      Tasks
-                    </h2>
+              {/* Tasks */}
+<section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+  <div className="mb-4 flex items-center justify-between">
+    <div>
+      <h2 className="text-lg font-semibold">Tasks</h2>
+      <p className="text-sm text-slate-400">
+        {tasks.length} total
+      </p>
+    </div>
 
-                    <span className="text-sm text-slate-400">
-                      {tasks.length} total
-                    </span>
-                  </div>
+    <button
+      onClick={() => setShowCreateTask(true)}
+      className="rounded-xl bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-800"
+    >
+      + Create Task
+    </button>
+  </div>
 
-                  <div className="space-y-3">
-                    {tasks.length === 0 && !loading ? (
-                      <p className="text-sm text-slate-500">
-                        No tasks found.
-                      </p>
-                    ) : (
-                      tasks.map((task) => (
-                        <div
-                          key={task._id}
-                          className="rounded-xl border border-slate-200 p-4"
-                        >
-                          <div className="flex items-start justify-between gap-4">
-                            <h3 className="font-semibold">
-                              {task.title}
-                            </h3>
+  <div className="space-y-3">
+    {tasks.length === 0 && !loading ? (
+      <p className="text-sm text-slate-500">
+        No tasks found.
+      </p>
+    ) : (
+      tasks.map((task) => (
+        <div
+          key={task._id}
+          className="rounded-xl border border-slate-200 p-4"
+        >
+          <div className="flex items-start justify-between gap-4">
+            <h3 className="font-semibold">{task.title}</h3>
 
-                            <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-600">
-                              {capitalize(task.status)}
-                            </span>
-                          </div>
+          <select
+  value={task.status}
+  onChange={(e) =>
+    handleStatusChange(task._id, e.target.value)
+  }
+  className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs font-medium text-slate-700 outline-none"
+>
+  <option value="todo">Todo</option>
+  <option value="in-progress">In-progress</option>
+  <option value="completed">Completed</option>
+</select>
+          </div>
 
-                          <p className="mt-3 text-sm text-slate-500">
-                            Assigned to:{" "}
-                            {task.assignedTo?.name ||
-                              "Unassigned"}
-                          </p>
-                        </div>
-                      ))
-                    )}
-                  </div>
-                </section>
-              </div>
-
+          <p className="mt-3 text-sm text-slate-500">
+            Assigned to: {task.assignedTo?.name || "Unassigned"}
+          </p>
+        </div>
+      ))
+    )}
+  </div>
+</section>
               {/* GitHub Activity */}
               <div className="mt-6 grid gap-6 lg:grid-cols-2">
                 <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
