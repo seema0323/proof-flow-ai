@@ -8,22 +8,28 @@ import {
   Settings,
 } from "lucide-react";
 import { FaGithub } from "react-icons/fa";
+
 import {
   getProjectHealth,
   getProjects,
   getTasks,
+  getGitHubCommits,
+  getGitHubContributors,
 } from "./services/api";
 
 function App() {
   const [health, setHealth] = useState(null);
   const [projects, setProjects] = useState([]);
   const [tasks, setTasks] = useState([]);
+  const [commits, setCommits] = useState([]);
+  const [contributors, setContributors] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
   const projectId = "6a9bef510dd60e7bf06339e3";
-  const token = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2YTliZTZiNjJkOWMyM2EzYTQzOGQwMTYiLCJpYXQiOjE3ODkxMzY3ODMsImV4cCI6MTc4OTc0MTU4M30.lRNgzKch15_pI8UeavvK7CZf52n1VT2VeIbCvyIQh_A";
 
+  // YAHAN APNA FRESH TOKEN RAKHO
+  const token =import.meta.env.VITE_AUTH_TOKEN;
   useEffect(() => {
     async function loadDashboard() {
       try {
@@ -37,6 +43,17 @@ function App() {
 
         const taskData = await getTasks(projectId, token);
         setTasks(taskData.tasks || taskData);
+
+        const commitData = await getGitHubCommits(projectId, token);
+        setCommits(commitData.commits || commitData);
+
+        const contributorData = await getGitHubContributors(
+          projectId,
+          token
+        );
+        setContributors(
+          contributorData.contributors || contributorData
+        );
       } catch (err) {
         setError(err.message);
       } finally {
@@ -50,6 +67,7 @@ function App() {
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900">
       <div className="flex min-h-screen">
+
         {/* Sidebar */}
         <aside className="hidden w-64 border-r border-slate-200 bg-white p-5 lg:block">
           <div className="mb-8 flex items-center gap-3">
@@ -59,18 +77,42 @@ function App() {
 
             <div>
               <h1 className="font-semibold">ProofFlow AI</h1>
-              <p className="text-xs text-slate-500">Work Verification</p>
+              <p className="text-xs text-slate-500">
+                Work Verification
+              </p>
             </div>
           </div>
 
           <nav className="space-y-2">
-            <SidebarItem icon={<LayoutDashboard size={18} />} text="Dashboard" active />
-            <SidebarItem icon={<FolderKanban size={18} />} text="Projects" />
-            <SidebarItem icon={<CheckSquare size={18} />} text="Tasks" />
-            <SidebarItem icon={<ShieldCheck size={18} />} text="Verification" />
-            <SidebarItem icon={<FaGithub size={18} />} text="GitHub" />
-            <SidebarItem icon={<Users size={18} />} text="Team" />
-            <SidebarItem icon={<Settings size={18} />} text="Settings" />
+            <SidebarItem
+              icon={<LayoutDashboard size={18} />}
+              text="Dashboard"
+              active
+            />
+            <SidebarItem
+              icon={<FolderKanban size={18} />}
+              text="Projects"
+            />
+            <SidebarItem
+              icon={<CheckSquare size={18} />}
+              text="Tasks"
+            />
+            <SidebarItem
+              icon={<ShieldCheck size={18} />}
+              text="Verification"
+            />
+            <SidebarItem
+              icon={<FaGithub size={18} />}
+              text="GitHub"
+            />
+            <SidebarItem
+              icon={<Users size={18} />}
+              text="Team"
+            />
+            <SidebarItem
+              icon={<Settings size={18} />}
+              text="Settings"
+            />
           </nav>
         </aside>
 
@@ -79,8 +121,12 @@ function App() {
           <header className="border-b border-slate-200 bg-white px-6 py-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-slate-500">Project Overview</p>
-                <h2 className="text-xl font-semibold">Dashboard</h2>
+                <p className="text-sm text-slate-500">
+                  Project Overview
+                </p>
+                <h2 className="text-xl font-semibold">
+                  Dashboard
+                </h2>
               </div>
 
               <div className="flex h-10 w-10 items-center justify-center rounded-full bg-slate-900 text-sm font-semibold text-white">
@@ -91,6 +137,7 @@ function App() {
 
           <main className="p-6">
             <div className="mx-auto max-w-7xl">
+
               {/* Hero */}
               <section className="rounded-3xl border border-slate-200 bg-white p-7 shadow-sm">
                 <p className="mb-2 text-sm font-semibold text-indigo-600">
@@ -102,8 +149,9 @@ function App() {
                 </h1>
 
                 <p className="mt-3 max-w-3xl text-slate-500">
-                  Track tasks, verify GitHub contributions, validate submitted
-                  evidence and understand the real health of your project.
+                  Track tasks, verify GitHub contributions,
+                  validate submitted evidence and understand
+                  the real health of your project.
                 </p>
               </section>
 
@@ -121,7 +169,7 @@ function App() {
                 </p>
               )}
 
-              {/* Health Cards */}
+              {/* Health */}
               {health && (
                 <section className="mt-6 grid gap-4 md:grid-cols-2 lg:grid-cols-4">
                   <MetricCard
@@ -152,10 +200,13 @@ function App() {
 
               {/* Projects + Tasks */}
               <div className="mt-6 grid gap-6 lg:grid-cols-2">
+
                 {/* Projects */}
                 <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
                   <div className="mb-4 flex items-center justify-between">
-                    <h2 className="text-lg font-semibold">Projects</h2>
+                    <h2 className="text-lg font-semibold">
+                      Projects
+                    </h2>
 
                     <span className="text-sm text-slate-400">
                       {projects.length} total
@@ -182,7 +233,8 @@ function App() {
                           </p>
 
                           <p className="mt-3 text-xs font-medium text-slate-600">
-                            Status: {capitalize(project.status)}
+                            Status:{" "}
+                            {capitalize(project.status)}
                           </p>
                         </div>
                       ))
@@ -193,7 +245,9 @@ function App() {
                 {/* Tasks */}
                 <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
                   <div className="mb-4 flex items-center justify-between">
-                    <h2 className="text-lg font-semibold">Tasks</h2>
+                    <h2 className="text-lg font-semibold">
+                      Tasks
+                    </h2>
 
                     <span className="text-sm text-slate-400">
                       {tasks.length} total
@@ -223,11 +277,98 @@ function App() {
 
                           <p className="mt-3 text-sm text-slate-500">
                             Assigned to:{" "}
-                            {task.assignedTo?.name || "Unassigned"}
+                            {task.assignedTo?.name ||
+                              "Unassigned"}
                           </p>
                         </div>
                       ))
                     )}
+                  </div>
+                </section>
+              </div>
+
+              {/* GitHub Activity */}
+              <div className="mt-6 grid gap-6 lg:grid-cols-2">
+                <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+                  <div className="mb-4 flex items-center justify-between">
+                    <h2 className="flex items-center gap-2 text-lg font-semibold">
+                      <FaGithub />
+                      Recent Commits
+                    </h2>
+
+                    <span className="text-sm text-slate-400">
+                      {commits.length}
+                    </span>
+                  </div>
+
+                  <div className="space-y-3">
+                    {commits.slice(0, 5).map((commit) => (
+                      <div
+                        key={commit.sha}
+                        className="rounded-xl border border-slate-200 p-4"
+                      >
+                        <p className="font-medium">
+                          {commit.message}
+                        </p>
+
+                        <p className="mt-2 text-xs text-slate-500">
+                          {commit.author || "Unknown author"}
+                        </p>
+                      </div>
+                    ))}
+
+                    {commits.length === 0 && !loading && (
+                      <p className="text-sm text-slate-500">
+                        No commits found.
+                      </p>
+                    )}
+                  </div>
+                </section>
+
+                {/* Contributors */}
+                <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+                  <div className="mb-4 flex items-center justify-between">
+                    <h2 className="text-lg font-semibold">
+                      Contributors
+                    </h2>
+
+                    <span className="text-sm text-slate-400">
+                      {contributors.length}
+                    </span>
+                  </div>
+
+                  <div className="space-y-3">
+                    {contributors.map((contributor) => (
+                      <div
+                        key={contributor.username}
+                        className="flex items-center justify-between rounded-xl border border-slate-200 p-4"
+                      >
+                        <div className="flex items-center gap-3">
+                          {contributor.avatar && (
+                            <img
+                              src={contributor.avatar}
+                              alt=""
+                              className="h-9 w-9 rounded-full"
+                            />
+                          )}
+
+                          <p className="font-medium">
+                            {contributor.username}
+                          </p>
+                        </div>
+
+                        <span className="text-sm text-slate-500">
+                          {contributor.contributions} commits
+                        </span>
+                      </div>
+                    ))}
+
+                    {contributors.length === 0 &&
+                      !loading && (
+                        <p className="text-sm text-slate-500">
+                          No contributors found.
+                        </p>
+                      )}
                   </div>
                 </section>
               </div>
@@ -257,7 +398,9 @@ function SidebarItem({ icon, text, active }) {
 function MetricCard({ title, value, description }) {
   return (
     <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-      <p className="text-sm font-medium text-slate-500">{title}</p>
+      <p className="text-sm font-medium text-slate-500">
+        {title}
+      </p>
 
       <p className="mt-2 text-3xl font-bold tracking-tight">
         {value}

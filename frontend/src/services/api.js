@@ -28,3 +28,10 @@ export function getProjects(token) {
 export function getTasks(projectId, token) {
   return request(`/api/tasks/${projectId}`, token);
 }
+export function getGitHubCommits(projectId, token) {
+  return request(`/api/github/${projectId}/commits`, token);
+}
+
+export function getGitHubContributors(projectId, token) {
+  return request(`/api/github/${projectId}/contributors`, token);
+}

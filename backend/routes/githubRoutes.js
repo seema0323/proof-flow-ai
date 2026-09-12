@@ -1,6 +1,12 @@
 const express = require("express");
 const Evidence = require("../models/Evidence");
 const axios = require("axios");
+const githubHeaders = {
+  headers: {
+    Authorization: `Bearer ${process.env.GITHUB_TOKEN}`,
+    Accept: "application/vnd.github+json",
+  },
+};
 const Project = require("../models/Project");
 const authMiddleware = require("../middleware/authMiddleware");
 
@@ -35,9 +41,10 @@ router.get("/:projectId/commits", authMiddleware, async (req, res) => {
         params: {
           per_page: 20,
         },
-        headers: {
-          Accept: "application/vnd.github+json",
-        },
+       headers: {
+  Accept: "application/vnd.github+json",
+  Authorization: `Bearer ${process.env.GITHUB_TOKEN}`,
+},
       }
     );
 
@@ -91,8 +98,9 @@ router.get("/:projectId/contributors", authMiddleware, async (req, res) => {
           per_page: 100,
         },
         headers: {
-          Accept: "application/vnd.github+json",
-        },
+  Accept: "application/vnd.github+json",
+  Authorization: `Bearer ${process.env.GITHUB_TOKEN}`,
+},
       }
     );
 
