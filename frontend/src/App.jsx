@@ -18,6 +18,9 @@ import {
   getTasks,
   getGitHubCommits,
   getGitHubContributors,
+  getEvidence,
+  submitEvidence,
+  autoVerifyEvidence,
 } from "./services/api";
 
 function App() {
@@ -28,6 +31,14 @@ function App() {
   const [contributors, setContributors] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [showEvidenceForm, setShowEvidenceForm] = useState(false);
+const [selectedTask, setSelectedTask] = useState(null);
+const [verificationResult, setVerificationResult] = useState(null);
+
+const [newEvidence, setNewEvidence] = useState({
+  description: "",
+  githubCommitSha: "",
+});
   const [showCreateTask, setShowCreateTask] = useState(false);
 
 const [newTask, setNewTask] = useState({
@@ -131,6 +142,37 @@ async function handleStatusChange(taskId, status) {
         task._id === taskId ? data.task : task
       )
     );
+  } catch (err) {
+    setError(err.message);
+  }
+}
+async function handleSubmitEvidence(e) {
+  e.preventDefault();
+
+  try {
+    const data = await submitEvidence(
+      {
+        taskId: selectedTask._id,
+        description: newEvidence.description,
+        githubCommitSha: newEvidence.githubCommitSha,
+      },
+      token
+    );
+
+   const verifyData = await autoVerifyEvidence(
+  data.evidence._id,
+  token
+);
+
+setVerificationResult(verifyData.evidence);
+
+    setNewEvidence({
+      description: "",
+      githubCommitSha: "",
+    });
+
+    setShowEvidenceForm(false);
+    setSelectedTask(null);
   } catch (err) {
     setError(err.message);
   }
@@ -292,6 +334,83 @@ async function handleStatusChange(taskId, status) {
     </div>
   </div>
 )}
+{showEvidenceForm && selectedTask && (
+  <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
+    <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl">
+
+      <div className="mb-5 flex items-center justify-between">
+        <div>
+          <h3 className="text-lg font-semibold">
+            Submit Work Proof
+          </h3>
+          <p className="text-sm text-slate-500">
+            {selectedTask.title}
+          </p>
+        </div>
+
+        <button
+          onClick={() => {
+            setShowEvidenceForm(false);
+            setSelectedTask(null);
+          }}
+          className="text-slate-400 hover:text-slate-700"
+        >
+          ✕
+        </button>
+      </div>
+
+      <form onSubmit={handleSubmitEvidence} className="space-y-4">
+        <div>
+          <label className="mb-1 block text-sm font-medium">
+            Work Description
+          </label>
+
+          <textarea
+            required
+            rows="3"
+            value={newEvidence.description}
+            onChange={(e) =>
+              setNewEvidence({
+                ...newEvidence,
+                description: e.target.value,
+              })
+            }
+            placeholder="Explain what work you completed"
+            className="w-full resize-none rounded-xl border border-slate-200 px-4 py-3 outline-none focus:border-indigo-500"
+          />
+        </div>
+
+        <div>
+          <label className="mb-1 block text-sm font-medium">
+            GitHub Commit SHA
+          </label>
+
+          <input
+            required
+            type="text"
+            value={newEvidence.githubCommitSha}
+            onChange={(e) =>
+              setNewEvidence({
+                ...newEvidence,
+                githubCommitSha: e.target.value,
+              })
+            }
+            placeholder="Example: 8e987ca..."
+            className="w-full rounded-xl border border-slate-200 px-4 py-3 outline-none focus:border-indigo-500"
+          />
+        </div>
+
+        <button
+          type="submit"
+          className="w-full rounded-xl bg-indigo-600 px-4 py-3 text-sm font-medium text-white hover:bg-indigo-700"
+        >
+          Submit & Verify Proof
+        </button>
+      </form>
+
+    </div>
+  </div>
+)}
       <div className="flex min-h-screen">
 
         {/* Sidebar */}
@@ -433,6 +552,29 @@ async function handleStatusChange(taskId, status) {
                   />
                 </section>
               )}
+              {verificationResult && (
+  <section className="mt-6">
+    <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-5">
+      <p className="text-sm font-medium text-emerald-700">
+        Evidence Verification Result
+      </p>
+
+      <h3 className="mt-1 text-lg font-semibold text-slate-900">
+        {verificationResult.verificationStatus === "verified"
+          ? "Verified ✅"
+          : verificationResult.verificationStatus}
+      </h3>
+
+      <p className="mt-2 text-sm text-slate-600">
+        Score: {verificationResult.verificationScore}%
+      </p>
+
+      <p className="mt-1 text-sm text-slate-600">
+        {verificationResult.verificationReason}
+      </p>
+    </div>
+  </section>
+)}
 
               {/* Projects + Tasks */}
               <div className="mt-6 grid gap-6 lg:grid-cols-2">
@@ -526,6 +668,15 @@ async function handleStatusChange(taskId, status) {
           <p className="mt-3 text-sm text-slate-500">
             Assigned to: {task.assignedTo?.name || "Unassigned"}
           </p>
+          <button
+  onClick={() => {
+    setSelectedTask(task);
+    setShowEvidenceForm(true);
+  }}
+  className="mt-3 rounded-lg border border-indigo-200 bg-indigo-50 px-3 py-2 text-xs font-medium text-indigo-700 hover:bg-indigo-100"
+>
+  Submit Proof
+</button>
         </div>
       ))
     )}

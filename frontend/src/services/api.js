@@ -56,3 +56,19 @@ export function getGitHubCommits(projectId, token) {
 export function getGitHubContributors(projectId, token) {
   return request(`/api/github/${projectId}/contributors`, token);
 }
+export function getEvidence(taskId, token) {
+  return request(`/api/evidence/${taskId}`, token);
+}
+
+export function submitEvidence(evidenceData, token) {
+  return request("/api/evidence", token, {
+    method: "POST",
+    body: JSON.stringify(evidenceData),
+  });
+}
+
+export function autoVerifyEvidence(evidenceId, token) {
+  return request(`/api/github/evidence/${evidenceId}/auto-verify`, token, {
+    method: "PATCH",
+  });
+}
