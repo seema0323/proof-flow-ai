@@ -60,11 +60,45 @@ export function getEvidence(taskId, token) {
   return request(`/api/evidence/${taskId}`, token);
 }
 
-export function submitEvidence(evidenceData, token) {
-  return request("/api/evidence", token, {
-    method: "POST",
-    body: JSON.stringify(evidenceData),
-  });
+export async function submitEvidence(evidenceData, token) {
+  const formData = new FormData();
+
+  formData.append("taskId", evidenceData.taskId);
+  formData.append("description", evidenceData.description);
+
+  if (evidenceData.githubCommitSha) {
+    formData.append(
+      "githubCommitSha",
+      evidenceData.githubCommitSha
+    );
+  }
+
+  if (evidenceData.deployedUrl) {
+    formData.append("deployedUrl", evidenceData.deployedUrl);
+  }
+
+  if (evidenceData.file) {
+    formData.append("file", evidenceData.file);
+  }
+
+  const response = await fetch(
+    `${API_BASE_URL}/api/evidence`,
+    {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+      body: formData,
+    }
+  );
+
+  const data = await response.json();
+
+  if (!response.ok) {
+    throw new Error(data.message || "Failed to submit evidence");
+  }
+
+  return data;
 }
 
 export function autoVerifyEvidence(evidenceId, token) {

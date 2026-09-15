@@ -34,10 +34,13 @@ function App() {
   const [showEvidenceForm, setShowEvidenceForm] = useState(false);
 const [selectedTask, setSelectedTask] = useState(null);
 const [verificationResult, setVerificationResult] = useState(null);
+const [submittedEvidence, setSubmittedEvidence] = useState(null);
 
 const [newEvidence, setNewEvidence] = useState({
   description: "",
   githubCommitSha: "",
+  deployedUrl: "",
+  file: null,
 });
   const [showCreateTask, setShowCreateTask] = useState(false);
 
@@ -150,29 +153,63 @@ async function handleSubmitEvidence(e) {
   e.preventDefault();
 
   try {
+    setError("");
+
     const data = await submitEvidence(
       {
         taskId: selectedTask._id,
         description: newEvidence.description,
         githubCommitSha: newEvidence.githubCommitSha,
+        deployedUrl: newEvidence.deployedUrl,
+        file: newEvidence.file,
       },
       token
     );
 
-   const verifyData = await autoVerifyEvidence(
-  data.evidence._id,
-  token
-);
+    setSubmittedEvidence(data.evidence);
 
-setVerificationResult(verifyData.evidence);
+    // GitHub verification only when commit SHA is provided
+    if (newEvidence.githubCommitSha.trim()) {
+      const verifyData = await autoVerifyEvidence(
+        data.evidence._id,
+        token
+      );
+
+      setVerificationResult(verifyData.evidence);
+    } else {
+      // Screenshot/file-only evidence stays pending for AI verification
+      setVerificationResult(data.evidence);
+    }
 
     setNewEvidence({
       description: "",
       githubCommitSha: "",
+      deployedUrl: "",
+      file: null,
     });
 
     setShowEvidenceForm(false);
     setSelectedTask(null);
+    setError("");
+  } catch (err) {
+    setError(err.message);
+  }
+}
+async function loadTaskEvidence(task) {
+  try {
+    setError("");
+    const data = await getEvidence(task._id, token);
+
+    if (data.evidence.length > 0) {
+      const latestEvidence =
+        data.evidence[data.evidence.length - 1];
+
+      setSubmittedEvidence(latestEvidence);
+      setVerificationResult(latestEvidence);
+    } else {
+      setSubmittedEvidence(null);
+      setVerificationResult(null);
+    }
   } catch (err) {
     setError(err.message);
   }
@@ -399,6 +436,46 @@ setVerificationResult(verifyData.evidence);
             className="w-full rounded-xl border border-slate-200 px-4 py-3 outline-none focus:border-indigo-500"
           />
         </div>
+        <div>
+  <label className="mb-1 block text-sm font-medium">
+    Deployed URL
+  </label>
+
+  <input
+    type="url"
+    value={newEvidence.deployedUrl}
+    onChange={(e) =>
+      setNewEvidence({
+        ...newEvidence,
+        deployedUrl: e.target.value,
+      })
+    }
+    placeholder="https://your-project.vercel.app"
+    className="w-full rounded-xl border border-slate-200 px-4 py-3 outline-none focus:border-indigo-500"
+  />
+</div>
+
+<div>
+  <label className="mb-1 block text-sm font-medium">
+    Screenshot / File
+  </label>
+
+  <input
+    type="file"
+    accept="image/*,.pdf"
+    onChange={(e) =>
+      setNewEvidence({
+        ...newEvidence,
+        file: e.target.files[0],
+      })
+    }
+    className="w-full rounded-xl border border-slate-200 px-4 py-3 text-sm"
+  />
+
+  <p className="mt-1 text-xs text-slate-400">
+    Maximum file size: 5 MB
+  </p>
+</div>
 
         <button
           type="submit"
@@ -572,6 +649,30 @@ setVerificationResult(verifyData.evidence);
       <p className="mt-1 text-sm text-slate-600">
         {verificationResult.verificationReason}
       </p>
+      {submittedEvidence?.fileUrl && (
+  <div className="mt-4">
+    <p className="mb-2 text-sm font-medium text-slate-700">
+      Submitted Evidence
+    </p>
+
+    <img
+      src={submittedEvidence.fileUrl}
+      alt="Submitted work evidence"
+      className="max-h-64 rounded-xl border border-slate-200 object-cover"
+    />
+  </div>
+)}
+
+{submittedEvidence?.deployedUrl && (
+  <a
+    href={submittedEvidence.deployedUrl}
+    target="_blank"
+    rel="noreferrer"
+    className="mt-3 inline-block text-sm font-medium text-indigo-600 hover:underline"
+  >
+    View Live Project ↗
+  </a>
+)}
     </div>
   </section>
 )}
@@ -665,19 +766,22 @@ setVerificationResult(verifyData.evidence);
 </select>
           </div>
 
-          <p className="mt-3 text-sm text-slate-500">
-            Assigned to: {task.assignedTo?.name || "Unassigned"}
-          </p>
-          <button
+      <p className="mt-3 text-sm text-slate-500">
+  Assigned to: {task.assignedTo?.name || "Unassigned"}
+</p>
+
+<button
   onClick={() => {
     setSelectedTask(task);
+    loadTaskEvidence(task);
     setShowEvidenceForm(true);
   }}
   className="mt-3 rounded-lg border border-indigo-200 bg-indigo-50 px-3 py-2 text-xs font-medium text-indigo-700 hover:bg-indigo-100"
 >
   Submit Proof
 </button>
-        </div>
+
+</div>
       ))
     )}
   </div>
