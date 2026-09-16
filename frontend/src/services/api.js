@@ -106,3 +106,12 @@ export function autoVerifyEvidence(evidenceId, token) {
     method: "PATCH",
   });
 }
+export function verifyEvidenceWithAI(evidenceId, token) {
+  return request(
+    `/api/ai/verify-evidence/${evidenceId}`,
+    token,
+    {
+      method: "PATCH",
+    }
+  );
+}

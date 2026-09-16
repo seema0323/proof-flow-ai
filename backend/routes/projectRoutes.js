@@ -207,11 +207,20 @@ router.get("/:projectId/health", authMiddleware, async (req, res) => {
         ? 0
         : Math.round((claimedTasks / totalTasks) * 100);
 
-    const verifiedTaskIds = await Evidence.distinct("task", {
-      task: { $in: taskIds },
-      verificationStatus: "verified",
-    });
+    const latestEvidence = await Evidence.aggregate([
+  { $match: { task: { $in: taskIds } } },
+  { $sort: { createdAt: -1 } },
+  {
+    $group: {
+      _id: "$task",
+      latestStatus: { $first: "$verificationStatus" },
+    },
+  },
+]);
 
+const verifiedTaskIds = latestEvidence
+  .filter((item) => item.latestStatus === "verified")
+  .map((item) => item._id);
     const verifiedProgress =
       totalTasks === 0
         ? 0

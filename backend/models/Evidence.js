@@ -50,6 +50,11 @@ const evidenceSchema = new mongoose.Schema(
   max: 100,
   default: 0,
 },
+verificationConfidence: {
+  type: String,
+  enum: ["low", "medium", "high"],
+  default: "low",
+},
 verificationReason: {
   type: String,
   default: "",

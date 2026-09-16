@@ -21,6 +21,7 @@ import {
   getEvidence,
   submitEvidence,
   autoVerifyEvidence,
+  verifyEvidenceWithAI,
 } from "./services/api";
 
 function App() {
@@ -155,6 +156,7 @@ async function handleSubmitEvidence(e) {
   try {
     setError("");
 
+    // 1. Evidence save
     const data = await submitEvidence(
       {
         taskId: selectedTask._id,
@@ -168,18 +170,14 @@ async function handleSubmitEvidence(e) {
 
     setSubmittedEvidence(data.evidence);
 
-    // GitHub verification only when commit SHA is provided
-    if (newEvidence.githubCommitSha.trim()) {
-      const verifyData = await autoVerifyEvidence(
-        data.evidence._id,
-        token
-      );
+    // 2. AI verification
+    const aiData = await verifyEvidenceWithAI(
+      data.evidence._id,
+      token
+    );
 
-      setVerificationResult(verifyData.evidence);
-    } else {
-      // Screenshot/file-only evidence stays pending for AI verification
-      setVerificationResult(data.evidence);
-    }
+    // 3. Show AI result
+    setVerificationResult(aiData.evidence);
 
     setNewEvidence({
       description: "",
@@ -643,8 +641,16 @@ async function loadTaskEvidence(task) {
       </h3>
 
       <p className="mt-2 text-sm text-slate-600">
-        Score: {verificationResult.verificationScore}%
-      </p>
+  Score: {verificationResult.verificationScore}%
+</p>
+
+<p className="mt-1 text-sm text-slate-600">
+  Confidence:{" "}
+  <span className="font-semibold capitalize">
+    {verificationResult.verificationConfidence || "low"}
+  </span>
+</p>
+      
 
       <p className="mt-1 text-sm text-slate-600">
         {verificationResult.verificationReason}
