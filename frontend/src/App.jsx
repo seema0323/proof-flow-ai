@@ -528,53 +528,91 @@ async function loadTaskEvidence(task) {
 )}
       <div className="flex min-h-screen">
 
-        {/* Sidebar */}
-        <aside className="hidden w-64 border-r border-slate-200 bg-white p-5 lg:block">
-          <div className="mb-8 flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-indigo-600 text-lg font-bold text-white">
-              P
-            </div>
+       {/* Sidebar */}
+<aside className="hidden w-72 shrink-0 border-r border-slate-800 bg-slate-950 px-4 py-6 text-white lg:flex lg:flex-col">
 
-            <div>
-              <h1 className="font-semibold">ProofFlow AI</h1>
-              <p className="text-xs text-slate-500">
-                Work Verification
-              </p>
-            </div>
-          </div>
+  {/* Brand */}
+  <div className="flex items-center gap-3 px-3">
+    <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-indigo-500 text-lg font-bold shadow-lg shadow-indigo-500/20">
+      P
+    </div>
 
-          <nav className="space-y-2">
-            <SidebarItem
-              icon={<LayoutDashboard size={18} />}
-              text="Dashboard"
-              active
-            />
-            <SidebarItem
-              icon={<FolderKanban size={18} />}
-              text="Projects"
-            />
-            <SidebarItem
-              icon={<CheckSquare size={18} />}
-              text="Tasks"
-            />
-            <SidebarItem
-              icon={<ShieldCheck size={18} />}
-              text="Verification"
-            />
-            <SidebarItem
-              icon={<FaGithub size={18} />}
-              text="GitHub"
-            />
-            <SidebarItem
-              icon={<Users size={18} />}
-              text="Team"
-            />
-            <SidebarItem
-              icon={<Settings size={18} />}
-              text="Settings"
-            />
-          </nav>
-        </aside>
+    <div>
+      <h1 className="text-base font-semibold tracking-tight">
+        ProofFlow AI
+      </h1>
+      <p className="text-xs text-slate-400">
+        Verified work intelligence
+      </p>
+    </div>
+  </div>
+
+  {/* Workspace */}
+  <div className="mt-8 px-3">
+    <p className="mb-3 text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">
+      Workspace
+    </p>
+
+    <nav className="space-y-1">
+      <SidebarItem
+        icon={<LayoutDashboard size={18} />}
+        text="Dashboard"
+        active
+      />
+      <SidebarItem
+        icon={<FolderKanban size={18} />}
+        text="Projects"
+      />
+      <SidebarItem
+        icon={<CheckSquare size={18} />}
+        text="Tasks"
+      />
+      <SidebarItem
+        icon={<ShieldCheck size={18} />}
+        text="Verification"
+      />
+    </nav>
+  </div>
+
+  {/* Intelligence */}
+  <div className="mt-7 px-3">
+    <p className="mb-3 text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">
+      Intelligence
+    </p>
+
+    <nav className="space-y-1">
+      <SidebarItem
+        icon={<FaGithub size={18} />}
+        text="GitHub Activity"
+      />
+      <SidebarItem
+        icon={<Users size={18} />}
+        text="Team"
+      />
+    </nav>
+  </div>
+
+  {/* Bottom */}
+  <div className="mt-auto px-3">
+    <div className="mb-3 rounded-2xl border border-slate-800 bg-slate-900/70 p-4">
+      <div className="mb-2 flex items-center gap-2">
+        <ShieldCheck size={16} className="text-emerald-400" />
+        <p className="text-sm font-medium">
+          Verification Engine
+        </p>
+      </div>
+
+      <p className="text-xs leading-5 text-slate-400">
+        AI and GitHub evidence verification active.
+      </p>
+    </div>
+
+    <SidebarItem
+      icon={<Settings size={18} />}
+      text="Settings"
+    />
+  </div>
+</aside>
         {/* Main */}
 <div className="flex-1">
   <header className="border-b border-slate-200 bg-white px-6 py-4">
@@ -608,65 +646,186 @@ async function loadTaskEvidence(task) {
   <main className="p-6">
    <div className="mx-auto max-w-7xl"></div>
 
-              {/* Hero */}
-              <section className="rounded-3xl border border-slate-200 bg-white p-7 shadow-sm">
-                <p className="mb-2 text-sm font-semibold text-indigo-600">
-                  AI Work Verification Platform
-                </p>
+           
+            
+              {/* Project Command Center */}
+<section className="overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-sm">
+  <div className="relative px-6 py-6 md:px-8">
+    <div className="absolute right-0 top-0 h-40 w-40 rounded-full bg-indigo-100/60 blur-3xl" />
 
-                <h1 className="text-3xl font-bold tracking-tight md:text-4xl">
-                  Don't just claim your work. Prove it.
-                </h1>
+    <div className="relative flex flex-col justify-between gap-5 lg:flex-row lg:items-center">
+      <div>
+        <div className="mb-3 flex flex-wrap items-center gap-2">
+          <span className="rounded-full border border-indigo-200 bg-indigo-50 px-3 py-1 text-xs font-semibold text-indigo-700">
+            ✦ AI Work Verification
+          </span>
 
-                <p className="mt-3 max-w-3xl text-slate-500">
-                  Track tasks, verify GitHub contributions,
-                  validate submitted evidence and understand
-                  the real health of your project.
-                </p>
-              </section>
+          <span className="rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-medium text-emerald-700">
+            ● Verification Active
+          </span>
+        </div>
 
-              {/* Loading */}
-              {loading && (
-                <p className="mt-6 text-sm text-slate-500">
-                  Loading dashboard...
-                </p>
-              )}
+        <h1 className="max-w-3xl text-2xl font-bold tracking-tight text-slate-950 md:text-3xl">
+          Turn project activity into
+          <span className="text-indigo-600"> verified progress.</span>
+        </h1>
 
-              {/* Error */}
-              {error && (
-                <p className="mt-6 rounded-xl bg-red-50 p-4 text-sm font-medium text-red-600">
-                  {error}
-                </p>
-              )}
+        <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-500">
+          ProofFlow validates evidence, GitHub activity and task
+          progress so your team can prove what was actually built.
+        </p>
+      </div>
 
-              {/* Health */}
-              {health && (
-                <section className="mt-6 grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-                  <MetricCard
-                    title="Claimed Progress"
-                    value={`${health.claimedProgress}%`}
-                    description={`${health.claimedTasks} tasks claimed complete`}
-                  />
+      <div className="flex shrink-0 items-center gap-3 rounded-xl border border-slate-200 bg-slate-50/80 px-4 py-3">
+        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-slate-950 text-white">
+          <ShieldCheck size={19} />
+        </div>
 
-                  <MetricCard
-                    title="Verified Progress"
-                    value={`${health.verifiedProgress}%`}
-                    description="Evidence-backed project progress"
-                  />
+        <div>
+          <p className="text-xs font-medium text-slate-500">
+            Current workspace
+          </p>
+          <p className="text-sm font-semibold text-slate-900">
+            ProofFlow AI
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
 
-                  <MetricCard
-                    title="Project Health"
-                    value={`${health.progress}%`}
-                    description={`${health.completedTasks}/${health.totalTasks} tasks completed`}
-                  />
+{/* Loading */}
+{loading && (
+  <div className="mt-5 rounded-xl border border-slate-200 bg-white p-4 text-sm text-slate-500">
+    Loading project intelligence...
+  </div>
+)}
 
-                  <MetricCard
-                    title="Risk Level"
-                    value={capitalize(health.riskLevel)}
-                    description={`${health.overdueTasks} overdue tasks`}
-                  />
-                </section>
-              )}
+{/* Error */}
+{error && (
+  <div className="mt-5 rounded-xl border border-red-200 bg-red-50 p-4 text-sm font-medium text-red-700">
+    {error}
+  </div>
+)}
+
+{/* Project Intelligence Metrics */}
+{health && (
+  <section className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+
+    {/* Claimed */}
+    <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md">
+      <div className="flex items-center justify-between">
+        <p className="text-sm font-medium text-slate-500">
+          Claimed Progress
+        </p>
+
+        <span className="rounded-lg bg-slate-100 px-2 py-1 text-xs font-semibold text-slate-600">
+          CLAIMED
+        </span>
+      </div>
+
+      <p className="mt-4 text-3xl font-bold tracking-tight text-slate-950">
+        {health.claimedProgress}%
+      </p>
+
+      <div className="mt-4 h-1.5 overflow-hidden rounded-full bg-slate-100">
+        <div
+          className="h-full rounded-full bg-slate-400 transition-all duration-500"
+          style={{ width: `${health.claimedProgress}%` }}
+        />
+      </div>
+
+      <p className="mt-3 text-xs text-slate-500">
+        {health.claimedTasks} tasks claimed complete
+      </p>
+    </div>
+
+    {/* Verified */}
+    <div className="rounded-2xl border border-indigo-200/70 bg-gradient-to-br from-white to-indigo-50/60 p-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md">
+      <div className="flex items-center justify-between">
+        <p className="text-sm font-medium text-slate-500">
+          Verified Progress
+        </p>
+
+        <span className="rounded-lg bg-indigo-100 px-2 py-1 text-xs font-semibold text-indigo-700">
+          VERIFIED
+        </span>
+      </div>
+
+      <p className="mt-4 text-3xl font-bold tracking-tight text-indigo-600">
+        {health.verifiedProgress}%
+      </p>
+
+      <div className="mt-4 h-1.5 overflow-hidden rounded-full bg-indigo-100">
+        <div
+          className="h-full rounded-full bg-indigo-600 transition-all duration-500"
+          style={{ width: `${health.verifiedProgress}%` }}
+        />
+      </div>
+
+      <p className="mt-3 text-xs text-slate-500">
+        Evidence-backed actual progress
+      </p>
+    </div>
+
+    {/* Health */}
+    <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md">
+      <div className="flex items-center justify-between">
+        <p className="text-sm font-medium text-slate-500">
+          Project Health
+        </p>
+
+        <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-50 text-emerald-600">
+          <ShieldCheck size={16} />
+        </span>
+      </div>
+
+      <p className="mt-4 text-3xl font-bold tracking-tight text-slate-950">
+        {health.progress}%
+      </p>
+
+      <p className="mt-3 text-xs text-slate-500">
+        {health.completedTasks} of {health.totalTasks} tasks completed
+      </p>
+    </div>
+
+    {/* Risk */}
+    <div
+      className={`rounded-2xl border p-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md ${
+        health.riskLevel === "high"
+          ? "border-red-200 bg-red-50/60"
+          : health.riskLevel === "medium"
+          ? "border-amber-200 bg-amber-50/60"
+          : "border-emerald-200 bg-emerald-50/60"
+      }`}
+    >
+      <div className="flex items-center justify-between">
+        <p className="text-sm font-medium text-slate-500">
+          Risk Level
+        </p>
+
+        <span
+          className={`h-2.5 w-2.5 rounded-full ${
+            health.riskLevel === "high"
+              ? "bg-red-500"
+              : health.riskLevel === "medium"
+              ? "bg-amber-500"
+              : "bg-emerald-500"
+          }`}
+        />
+      </div>
+
+      <p className="mt-4 text-3xl font-bold tracking-tight text-slate-950">
+        {capitalize(health.riskLevel)}
+      </p>
+
+      <p className="mt-3 text-xs text-slate-500">
+        {health.overdueTasks} overdue tasks need attention
+      </p>
+    </div>
+
+  </section>
+)}
               <section className="mt-6 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
   <div className="flex items-center justify-between">
     <div>
@@ -1068,14 +1227,27 @@ async function loadTaskEvidence(task) {
 function SidebarItem({ icon, text, active }) {
   return (
     <div
-      className={`flex cursor-pointer items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium ${
+      className={`group flex cursor-pointer items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all duration-200 ${
         active
-          ? "bg-indigo-50 text-indigo-700"
-          : "text-slate-600 hover:bg-slate-50"
+          ? "bg-indigo-500/15 text-indigo-300 ring-1 ring-inset ring-indigo-500/20"
+          : "text-slate-400 hover:bg-slate-900 hover:text-white"
       }`}
     >
-      {icon}
+      <span
+        className={
+          active
+            ? "text-indigo-400"
+            : "text-slate-500 transition-colors group-hover:text-slate-300"
+        }
+      >
+        {icon}
+      </span>
+
       <span>{text}</span>
+
+      {active && (
+        <span className="ml-auto h-1.5 w-1.5 rounded-full bg-indigo-400" />
+      )}
     </div>
   );
 }
