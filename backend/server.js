@@ -1,6 +1,9 @@
 require("dotenv").config();
 
 const express = require("express");
+const aiRoutes = require("./routes/aiRoutes");
+const reportRoutes = require("./routes/reportRoutes");
+const insightRoutes = require("./routes/insightRoutes");
 const cors = require("cors");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
@@ -123,6 +126,9 @@ app.use("/api/projects", projectRoutes);
 app.use("/api/tasks", taskRoutes);
 app.use("/api/evidence", evidenceRoutes);
 app.use("/api/github", githubRoutes);
+app.use("/api/ai", aiRoutes);
+app.use("/api/insights", insightRoutes);
+app.use("/api/reports", reportRoutes);
 app.listen(5000, () => {
   console.log("ProofFlow backend running on port 5000");
 });

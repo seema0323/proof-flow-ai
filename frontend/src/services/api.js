@@ -115,3 +115,15 @@ export function verifyEvidenceWithAI(evidenceId, token) {
     }
   );
 }
+export function getProjectInsights(projectId, token) {
+  return request(
+    `/api/insights/${projectId}`,
+    token
+  );
+}
+export function getProjectReport(projectId, token) {
+  return request(
+    `/api/reports/${projectId}`,
+    token
+  );
+}
