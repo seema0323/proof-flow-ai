@@ -1,5 +1,10 @@
 import { useEffect, useState } from "react";
 import {
+  NavLink,
+  useLocation,
+  Navigate,
+} from "react-router-dom";
+import {
   LayoutDashboard,
   FolderKanban,
   CheckSquare,
@@ -25,8 +30,16 @@ import {
   getProjectInsights,
   getProjectReport,
 } from "./services/api";
+import Projects from "./pages/Projects";
+import Tasks from "./pages/Tasks";
+import Verification from "./pages/Verification";
+import GitHubActivity from "./pages/GitHubActivity";
+import Team from "./pages/Team";
+import Intelligence from "./pages/Intelligence";
+import SettingsPage from "./pages/Settings";
 
 function App() {
+    const location = useLocation();
   const [health, setHealth] = useState(null);
   const [projects, setProjects] = useState([]);
   const [tasks, setTasks] = useState([]);
@@ -252,6 +265,37 @@ async function loadTaskEvidence(task) {
     setError(err.message);
   }
 }
+  if (location.pathname === "/") {
+    return <Navigate to="/dashboard" replace />;
+  }
+
+  if (location.pathname === "/projects") {
+    return <Projects />;
+  }
+
+  if (location.pathname === "/tasks") {
+    return <Tasks />;
+  }
+
+  if (location.pathname === "/verification") {
+    return <Verification />;
+  }
+
+  if (location.pathname === "/github") {
+    return <GitHubActivity />;
+  }
+
+  if (location.pathname === "/team") {
+    return <Team />;
+  }
+
+  if (location.pathname === "/intelligence") {
+    return <Intelligence />;
+  }
+if (location.pathname === "/settings") {
+  return <SettingsPage />;
+}
+  
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900">
       {showCreateProject && (
@@ -546,51 +590,65 @@ async function loadTaskEvidence(task) {
       </p>
     </div>
   </div>
+{/* Workspace */}
+<div className="mt-8 px-3">
+  <p className="mb-3 text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">
+    Workspace
+  </p>
 
-  {/* Workspace */}
-  <div className="mt-8 px-3">
-    <p className="mb-3 text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">
-      Workspace
-    </p>
+  <nav className="space-y-1">
+    <SidebarItem
+      icon={<LayoutDashboard size={18} />}
+      text="Dashboard"
+      to="/dashboard"
+    />
 
-    <nav className="space-y-1">
-      <SidebarItem
-        icon={<LayoutDashboard size={18} />}
-        text="Dashboard"
-        active
-      />
-      <SidebarItem
-        icon={<FolderKanban size={18} />}
-        text="Projects"
-      />
-      <SidebarItem
-        icon={<CheckSquare size={18} />}
-        text="Tasks"
-      />
-      <SidebarItem
-        icon={<ShieldCheck size={18} />}
-        text="Verification"
-      />
-    </nav>
-  </div>
+    <SidebarItem
+      icon={<FolderKanban size={18} />}
+      text="Projects"
+      to="/projects"
+    />
 
-  {/* Intelligence */}
-  <div className="mt-7 px-3">
-    <p className="mb-3 text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">
-      Intelligence
-    </p>
+    <SidebarItem
+      icon={<CheckSquare size={18} />}
+      text="Tasks"
+      to="/tasks"
+    />
 
-    <nav className="space-y-1">
-      <SidebarItem
-        icon={<FaGithub size={18} />}
-        text="GitHub Activity"
-      />
-      <SidebarItem
-        icon={<Users size={18} />}
-        text="Team"
-      />
-    </nav>
-  </div>
+    <SidebarItem
+      icon={<ShieldCheck size={18} />}
+      text="Verification"
+      to="/verification"
+    />
+  </nav>
+</div>
+
+{/* Intelligence */}
+<div className="mt-7 px-3">
+  <p className="mb-3 text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">
+    Intelligence
+  </p>
+
+  <nav className="space-y-1">
+    <SidebarItem
+      icon={<FaGithub size={18} />}
+      text="GitHub Activity"
+      to="/github"
+    />
+
+    <SidebarItem
+      icon={<Users size={18} />}
+      text="Team"
+      to="/team"
+    />
+
+    <SidebarItem
+      icon={<ShieldCheck size={18} />}
+      text="AI Intelligence"
+      to="/intelligence"
+    />
+  </nav>
+</div>
 
   {/* Bottom */}
   <div className="mt-auto px-3">
@@ -1223,32 +1281,38 @@ async function loadTaskEvidence(task) {
     </div>
   );
 }
-
-function SidebarItem({ icon, text, active }) {
+function SidebarItem({ icon, text, to }) {
   return (
-    <div
-      className={`group flex cursor-pointer items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all duration-200 ${
-        active
-          ? "bg-indigo-500/15 text-indigo-300 ring-1 ring-inset ring-indigo-500/20"
-          : "text-slate-400 hover:bg-slate-900 hover:text-white"
-      }`}
+    <NavLink
+      to={to}
+      className={({ isActive }) =>
+        `group flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all duration-200 ${
+          isActive
+            ? "bg-indigo-500/15 text-indigo-300 ring-1 ring-inset ring-indigo-500/20"
+            : "text-slate-400 hover:bg-slate-900 hover:text-white"
+        }`
+      }
     >
-      <span
-        className={
-          active
-            ? "text-indigo-400"
-            : "text-slate-500 transition-colors group-hover:text-slate-300"
-        }
-      >
-        {icon}
-      </span>
+      {({ isActive }) => (
+        <>
+          <span
+            className={
+              isActive
+                ? "text-indigo-400"
+                : "text-slate-500 transition-colors group-hover:text-slate-300"
+            }
+          >
+            {icon}
+          </span>
 
-      <span>{text}</span>
+          <span>{text}</span>
 
-      {active && (
-        <span className="ml-auto h-1.5 w-1.5 rounded-full bg-indigo-400" />
+          {isActive && (
+            <span className="ml-auto h-1.5 w-1.5 rounded-full bg-indigo-400" />
+          )}
+        </>
       )}
-    </div>
+    </NavLink>
   );
 }
 
