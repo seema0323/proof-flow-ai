@@ -37,6 +37,7 @@ import GitHubActivity from "./pages/GitHubActivity";
 import Team from "./pages/Team";
 import Intelligence from "./pages/Intelligence";
 import SettingsPage from "./pages/Settings";
+import AppLayout from "./components/layout/AppLayout";
 
 function App() {
     const location = useLocation();
@@ -270,30 +271,59 @@ async function loadTaskEvidence(task) {
   }
 
   if (location.pathname === "/projects") {
-    return <Projects />;
-  }
+  return (
+    <AppLayout>
+      <Projects />
+    </AppLayout>
+  );
+}
 
-  if (location.pathname === "/tasks") {
-    return <Tasks />;
-  }
+if (location.pathname === "/tasks") {
+  return (
+    <AppLayout>
+      <Tasks />
+    </AppLayout>
+  );
+}
 
-  if (location.pathname === "/verification") {
-    return <Verification />;
-  }
+if (location.pathname === "/verification") {
+  return (
+    <AppLayout>
+      <Verification />
+    </AppLayout>
+  );
+}
 
-  if (location.pathname === "/github") {
-    return <GitHubActivity />;
-  }
+if (location.pathname === "/github") {
+  return (
+    <AppLayout>
+      <GitHubActivity />
+    </AppLayout>
+  );
+}
 
-  if (location.pathname === "/team") {
-    return <Team />;
-  }
+if (location.pathname === "/team") {
+  return (
+    <AppLayout>
+      <Team />
+    </AppLayout>
+  );
+}
 
-  if (location.pathname === "/intelligence") {
-    return <Intelligence />;
-  }
+if (location.pathname === "/intelligence") {
+  return (
+    <AppLayout>
+      <Intelligence />
+    </AppLayout>
+  );
+}
+
 if (location.pathname === "/settings") {
-  return <SettingsPage />;
+  return (
+    <AppLayout>
+      <SettingsPage />
+    </AppLayout>
+  );
 }
   
   return (
