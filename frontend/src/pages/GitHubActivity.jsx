@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { useProject } from "../context/ProjectContext";
 import {
   Users,
   Activity,
@@ -19,9 +20,9 @@ import {
 } from "../services/api";
 
 const token = import.meta.env.VITE_AUTH_TOKEN;
-const PROJECT_ID = "6a9bef510dd60e7bf06339e3";
 
 export default function GitHubActivity() {
+  const { selectedProjectId } = useProject();
   const [commits, setCommits] = useState([]);
   const [contributors, setContributors] = useState([]);
   const [search, setSearch] = useState("");
@@ -30,14 +31,21 @@ export default function GitHubActivity() {
   const [error, setError] = useState("");
 
   async function loadGitHubData(refresh = false) {
+    if (!selectedProjectId) {
+      setCommits([]);
+      setContributors([]);
+      setLoading(false);
+      return;
+    }
+
     try {
       refresh ? setRefreshing(true) : setLoading(true);
       setError("");
 
       const [commitResponse, contributorResponse] =
         await Promise.all([
-          getGitHubCommits(PROJECT_ID, token),
-          getGitHubContributors(PROJECT_ID, token),
+          getGitHubCommits(selectedProjectId, token),
+          getGitHubContributors(selectedProjectId, token),
         ]);
 
       const commitData = Array.isArray(commitResponse)
@@ -69,7 +77,7 @@ export default function GitHubActivity() {
 
   useEffect(() => {
     loadGitHubData();
-  }, []);
+  }, [selectedProjectId]);
 
   const filteredCommits = useMemo(() => {
     const query = search.trim().toLowerCase();

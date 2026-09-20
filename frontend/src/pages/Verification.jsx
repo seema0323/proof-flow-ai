@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { useProject } from "../context/ProjectContext";
 import {
   ShieldCheck,
   Search,
@@ -20,9 +21,10 @@ import {
 } from "../services/api";
 
 const token = import.meta.env.VITE_AUTH_TOKEN;
-const PROJECT_ID = "6a9bef510dd60e7bf06339e3";
+
 
 export default function Verification() {
+  const { selectedProjectId } = useProject();
   const [evidence, setEvidence] = useState([]);
   const [loading, setLoading] = useState(true);
   const [verifyingId, setVerifyingId] = useState("");
@@ -32,11 +34,17 @@ export default function Verification() {
   const [filter, setFilter] = useState("all");
 
   async function loadVerificationData() {
+    if (!selectedProjectId) {
+      setEvidence([]);
+      setLoading(false);
+      return;
+    }
+
     try {
       setLoading(true);
       setError("");
 
-      const taskData = await getTasks(PROJECT_ID, token);
+      const taskData = await getTasks(selectedProjectId, token);
       const tasks = Array.isArray(taskData)
         ? taskData
         : taskData?.tasks || [];
@@ -78,7 +86,7 @@ export default function Verification() {
 
   useEffect(() => {
     loadVerificationData();
-  }, []);
+  }, [selectedProjectId]);
 
   async function handleAIVerify(evidenceId) {
     try {

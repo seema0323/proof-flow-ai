@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { useProject } from "../context/ProjectContext";
 import {
   Plus,
   Search,
@@ -21,9 +22,10 @@ import {
 } from "../services/api";
 
 const token = import.meta.env.VITE_AUTH_TOKEN;
-const PROJECT_ID = "6a9bef510dd60e7bf06339e3";
+
 
 export default function Tasks() {
+  const { selectedProjectId } = useProject();
   const [tasks, setTasks] = useState([]);
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState("all");
@@ -42,11 +44,17 @@ export default function Tasks() {
   });
 
   async function loadTasks() {
+    if (!selectedProjectId) {
+      setTasks([]);
+      setLoading(false);
+      return;
+    }
+
     try {
       setLoading(true);
       setError("");
 
-      const data = await getTasks(PROJECT_ID, token);
+      const data = await getTasks(selectedProjectId, token);
 
       if (Array.isArray(data)) {
         setTasks(data);
@@ -62,7 +70,7 @@ export default function Tasks() {
 
   useEffect(() => {
     loadTasks();
-  }, []);
+  }, [selectedProjectId]);
 
   async function handleStatusChange(taskId, status) {
     try {
@@ -96,7 +104,7 @@ export default function Tasks() {
       const payload = {
         title: newTask.title.trim(),
         description: newTask.description.trim(),
-        project: PROJECT_ID,
+        project: selectedProjectId,
       };
 
       if (newTask.deadline) {

@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useProject } from "../context/ProjectContext";
 import {
   BrainCircuit,
   Sparkles,
@@ -19,9 +20,9 @@ import {
 } from "../services/api";
 
 const token = import.meta.env.VITE_AUTH_TOKEN;
-const PROJECT_ID = "6a9bef510dd60e7bf06339e3";
 
 export default function Intelligence() {
+  const { selectedProjectId } = useProject();
   const [insights, setInsights] = useState(null);
   const [report, setReport] = useState(null);
 
@@ -30,12 +31,20 @@ export default function Intelligence() {
 
   const [error, setError] = useState("");
 
+  useEffect(() => {
+    setInsights(null);
+    setReport(null);
+    setError("");
+  }, [selectedProjectId]);
+
   async function analyzeProject() {
+    if (!selectedProjectId) return;
+
     try {
       setInsightsLoading(true);
       setError("");
 
-      const data = await getProjectInsights(PROJECT_ID, token);
+      const data = await getProjectInsights(selectedProjectId, token);
       setInsights(data);
     } catch (err) {
       setError(err.message || "Unable to generate AI insights.");
@@ -45,11 +54,13 @@ export default function Intelligence() {
   }
 
   async function generateReport() {
+    if (!selectedProjectId) return;
+
     try {
       setReportLoading(true);
       setError("");
 
-      const data = await getProjectReport(PROJECT_ID, token);
+      const data = await getProjectReport(selectedProjectId, token);
       setReport(data);
     } catch (err) {
       setError(err.message || "Unable to generate project report.");

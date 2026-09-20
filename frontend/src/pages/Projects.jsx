@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { useProject } from "../context/ProjectContext";
 import {
   Search,
   Plus,
@@ -14,6 +15,7 @@ import { getProjects, createProject } from "../services/api";
 const token = import.meta.env.VITE_AUTH_TOKEN;
 
 export default function Projects() {
+  const { selectedProjectId, selectProject } = useProject();
   const [projects, setProjects] = useState([]);
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
@@ -214,14 +216,38 @@ export default function Projects() {
             {filteredProjects.map((project) => (
               <article
                 key={project._id}
-                className="group flex min-h-[270px] flex-col rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition duration-200 hover:-translate-y-1 hover:border-indigo-200 hover:shadow-lg"
+                onClick={() => selectProject(project._id)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" || e.key === " ") {
+                    e.preventDefault();
+                    selectProject(project._id);
+                  }
+                }}
+                role="button"
+                tabIndex={0}
+                className={`group flex min-h-[270px] flex-col rounded-2xl border bg-white p-5 shadow-sm transition duration-200 hover:-translate-y-1 hover:border-indigo-200 hover:shadow-lg ${
+                  selectedProjectId === project._id
+                    ? "border-indigo-300 ring-2 ring-indigo-100"
+                    : "border-slate-200"
+                }`}
               >
                 <div className="flex items-start justify-between gap-4">
                   <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-indigo-50 text-indigo-600">
                     <FolderKanban size={21} />
                   </div>
 
-                  <StatusBadge status={project.status} />
+                  <div className="flex items-center gap-2">
+                    <StatusBadge status={project.status} />
+                    {selectedProjectId === project._id ? (
+                      <span className="rounded-full bg-indigo-50 px-2.5 py-1 text-xs font-semibold text-indigo-700 ring-1 ring-inset ring-indigo-600/10">
+                        Active Project
+                      </span>
+                    ) : (
+                      <span className="text-[11px] font-semibold text-slate-400">
+                        Click to select
+                      </span>
+                    )}
+                  </div>
                 </div>
 
                 <div className="mt-5">

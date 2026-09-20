@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { useProject } from "../context/ProjectContext";
 import {
   Users,
   UserRound,
@@ -15,10 +16,10 @@ import {
 import { getTasks } from "../services/api";
 
 const token = import.meta.env.VITE_AUTH_TOKEN;
-const PROJECT_ID = "6a9bef510dd60e7bf06339e3";
 const API_URL = "http://localhost:5000";
 
 export default function Team() {
+  const { selectedProjectId } = useProject();
   const [members, setMembers] = useState([]);
   const [tasks, setTasks] = useState([]);
   const [search, setSearch] = useState("");
@@ -26,17 +27,24 @@ export default function Team() {
   const [error, setError] = useState("");
 
   async function loadTeam() {
+    if (!selectedProjectId) {
+      setMembers([]);
+      setTasks([]);
+      setLoading(false);
+      return;
+    }
+
     try {
       setLoading(true);
       setError("");
 
       const [memberResponse, taskData] = await Promise.all([
-        fetch(`${API_URL}/api/projects/${PROJECT_ID}/members`, {
+        fetch(`${API_URL}/api/projects/${selectedProjectId}/members`, {
           headers: {
             Authorization: `Bearer ${token}`,
           },
         }),
-        getTasks(PROJECT_ID, token),
+        getTasks(selectedProjectId, token),
       ]);
 
       const memberData = await memberResponse.json();
@@ -66,7 +74,7 @@ export default function Team() {
 
   useEffect(() => {
     loadTeam();
-  }, []);
+  }, [selectedProjectId]);
 
   const normalizedMembers = useMemo(() => {
     return members.map((entry) => {
