@@ -19,12 +19,11 @@ import {
   getEvidence,
   verifyEvidenceWithAI,
 } from "../services/api";
-
-const token = import.meta.env.VITE_AUTH_TOKEN;
-
+import { useAuth } from "../context/AuthContext";
 
 export default function Verification() {
   const { selectedProjectId } = useProject();
+  const { token } = useAuth();
   const [evidence, setEvidence] = useState([]);
   const [loading, setLoading] = useState(true);
   const [verifyingId, setVerifyingId] = useState("");
@@ -86,7 +85,7 @@ export default function Verification() {
 
   useEffect(() => {
     loadVerificationData();
-  }, [selectedProjectId]);
+  }, [selectedProjectId, token]);
 
   async function handleAIVerify(evidenceId) {
     try {

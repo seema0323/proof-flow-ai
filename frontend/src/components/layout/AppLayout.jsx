@@ -1,4 +1,4 @@
-import { NavLink } from "react-router-dom";
+import { NavLink, useNavigate } from "react-router-dom";
 import {
   LayoutDashboard,
   FolderKanban,
@@ -7,10 +7,20 @@ import {
   Users,
   Settings,
   BrainCircuit,
+  LogOut,
 } from "lucide-react";
 import { FaGithub } from "react-icons/fa";
+import { useAuth } from "../../context/AuthContext";
 
 export default function AppLayout({ children }) {
+  const { logout } = useAuth();
+  const navigate = useNavigate();
+
+  function handleLogout() {
+    logout();
+    navigate("/login", { replace: true });
+  }
+
   return (
     <div className="min-h-screen bg-[#f6f8fc] text-slate-900">
       <div className="flex min-h-screen">
@@ -113,6 +123,16 @@ export default function AppLayout({ children }) {
               text="Settings"
               to="/settings"
             />
+            <button
+              type="button"
+              onClick={handleLogout}
+              className="group flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-slate-400 transition-all duration-200 hover:bg-slate-900 hover:text-white"
+            >
+              <span className="text-slate-500 transition-colors group-hover:text-slate-300">
+                <LogOut size={18} />
+              </span>
+              <span>Log out</span>
+            </button>
           </div>
         </aside>
 

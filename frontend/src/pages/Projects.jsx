@@ -11,11 +11,11 @@ import {
 } from "lucide-react";
 import { FaGithub } from "react-icons/fa";
 import { getProjects, createProject } from "../services/api";
-
-const token = import.meta.env.VITE_AUTH_TOKEN;
+import { useAuth } from "../context/AuthContext";
 
 export default function Projects() {
   const { selectedProjectId, selectProject } = useProject();
+  const { token } = useAuth();
   const [projects, setProjects] = useState([]);
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
@@ -50,7 +50,7 @@ export default function Projects() {
 
   useEffect(() => {
     loadProjects();
-  }, []);
+  }, [token]);
 
   async function handleCreateProject(e) {
     e.preventDefault();

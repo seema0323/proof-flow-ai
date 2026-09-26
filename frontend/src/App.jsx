@@ -38,9 +38,12 @@ import Team from "./pages/Team";
 import Intelligence from "./pages/Intelligence";
 import SettingsPage from "./pages/Settings";
 import AppLayout from "./components/layout/AppLayout";
+import Login from "./pages/Login";
+import { useAuth } from "./context/AuthContext";
 
 function App() {
     const location = useLocation();
+  const { token, isAuthenticated } = useAuth();
   const [health, setHealth] = useState(null);
   const [projects, setProjects] = useState([]);
   const [tasks, setTasks] = useState([]);
@@ -79,9 +82,9 @@ const [newProject, setNewProject] = useState({
 
   const projectId = "6a9bef510dd60e7bf06339e3";
 
-  // YAHAN APNA FRESH TOKEN RAKHO
-  const token =import.meta.env.VITE_AUTH_TOKEN;
   useEffect(() => {
+    if (!token) return;
+
     async function loadDashboard() {
       try {
         setError("");
@@ -113,7 +116,7 @@ const [newProject, setNewProject] = useState({
     }
 
     loadDashboard();
-  }, []);
+  }, [token]);
   async function handleCreateProject(e) {
   e.preventDefault();
 
@@ -266,6 +269,14 @@ async function loadTaskEvidence(task) {
     setError(err.message);
   }
 }
+  if (location.pathname === "/login") {
+    return isAuthenticated ? <Navigate to="/dashboard" replace /> : <Login />;
+  }
+
+  if (!isAuthenticated) {
+    return <Navigate to="/login" replace />;
+  }
+
   if (location.pathname === "/") {
     return <Navigate to="/dashboard" replace />;
   }

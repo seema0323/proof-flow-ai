@@ -18,11 +18,11 @@ import {
   getProjectInsights,
   getProjectReport,
 } from "../services/api";
-
-const token = import.meta.env.VITE_AUTH_TOKEN;
+import { useAuth } from "../context/AuthContext";
 
 export default function Intelligence() {
   const { selectedProjectId } = useProject();
+  const { token } = useAuth();
   const [insights, setInsights] = useState(null);
   const [report, setReport] = useState(null);
 

@@ -20,12 +20,11 @@ import {
   createTask,
   updateTaskStatus,
 } from "../services/api";
-
-const token = import.meta.env.VITE_AUTH_TOKEN;
-
+import { useAuth } from "../context/AuthContext";
 
 export default function Tasks() {
   const { selectedProjectId } = useProject();
+  const { token } = useAuth();
   const [tasks, setTasks] = useState([]);
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState("all");
@@ -70,7 +69,7 @@ export default function Tasks() {
 
   useEffect(() => {
     loadTasks();
-  }, [selectedProjectId]);
+  }, [selectedProjectId, token]);
 
   async function handleStatusChange(taskId, status) {
     try {

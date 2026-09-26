@@ -18,11 +18,11 @@ import {
   getGitHubCommits,
   getGitHubContributors,
 } from "../services/api";
-
-const token = import.meta.env.VITE_AUTH_TOKEN;
+import { useAuth } from "../context/AuthContext";
 
 export default function GitHubActivity() {
   const { selectedProjectId } = useProject();
+  const { token } = useAuth();
   const [commits, setCommits] = useState([]);
   const [contributors, setContributors] = useState([]);
   const [search, setSearch] = useState("");
@@ -77,7 +77,7 @@ export default function GitHubActivity() {
 
   useEffect(() => {
     loadGitHubData();
-  }, [selectedProjectId]);
+  }, [selectedProjectId, token]);
 
   const filteredCommits = useMemo(() => {
     const query = search.trim().toLowerCase();

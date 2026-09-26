@@ -14,12 +14,12 @@ import {
 } from "lucide-react";
 
 import { getTasks } from "../services/api";
-
-const token = import.meta.env.VITE_AUTH_TOKEN;
+import { useAuth } from "../context/AuthContext";
 const API_URL = "http://localhost:5000";
 
 export default function Team() {
   const { selectedProjectId } = useProject();
+  const { token } = useAuth();
   const [members, setMembers] = useState([]);
   const [tasks, setTasks] = useState([]);
   const [search, setSearch] = useState("");
@@ -74,7 +74,7 @@ export default function Team() {
 
   useEffect(() => {
     loadTeam();
-  }, [selectedProjectId]);
+  }, [selectedProjectId, token]);
 
   const normalizedMembers = useMemo(() => {
     return members.map((entry) => {
