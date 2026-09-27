@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
+import { Link } from "react-router-dom";
 import { useProject } from "../context/ProjectContext";
 import {
-  ShieldCheck,
+  Activity,
   Search,
   Sparkles,
   Loader2,
@@ -12,6 +13,7 @@ import {
   FileCheck2,
   BrainCircuit,
   Filter,
+  FolderKanban,
 } from "lucide-react";
 
 import {
@@ -153,9 +155,9 @@ export default function Verification() {
       : 0;
 
   return (
-    <div className="min-h-screen bg-[#f6f8fc]">
+    <div className="min-h-screen bg-[#f4f6fb]">
       {/* HEADER */}
-      <header className="sticky top-0 z-20 border-b border-slate-200 bg-white/90 backdrop-blur-xl">
+      <header className="border-b border-slate-200 bg-[#f4f6fb]">
         <div className="flex items-center justify-between px-6 py-4 lg:px-8">
           <div>
             <p className="text-xs font-bold uppercase tracking-[0.16em] text-indigo-600">
@@ -167,19 +169,16 @@ export default function Verification() {
             </h1>
           </div>
 
-          <div className="hidden items-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm font-semibold text-emerald-700 sm:flex">
-            <ShieldCheck size={17} />
-            Verification Engine Active
-          </div>
+          <Link to="/projects" className="hidden items-center gap-2 rounded-md border border-slate-300 bg-white px-3 py-2 text-xs font-semibold text-slate-700 transition hover:border-indigo-300 hover:text-indigo-700 sm:flex">
+            <FolderKanban size={15} /> Project context
+          </Link>
         </div>
       </header>
 
       <main className="px-6 py-7 lg:px-8">
         {/* HERO */}
-        <section className="relative overflow-hidden rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-          <div className="absolute -right-20 -top-24 h-64 w-64 rounded-full bg-indigo-100/70 blur-3xl" />
-
-          <div className="relative flex flex-col gap-7 xl:flex-row xl:items-end xl:justify-between">
+        <section className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
+          <div className="flex flex-col gap-7 xl:flex-row xl:items-end xl:justify-between">
             <div>
               <div className="flex items-center gap-2 text-sm font-semibold text-indigo-600">
                 <Sparkles size={16} />
@@ -198,29 +197,13 @@ export default function Verification() {
             </div>
 
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-              <Metric
-                label="Pending"
-                value={pendingCount}
-                type="pending"
-              />
+              <Metric label="Pending" value={pendingCount} type="pending" />
 
-              <Metric
-                label="Verified"
-                value={verifiedCount}
-                type="verified"
-              />
+              <Metric label="Verified" value={verifiedCount} type="verified" />
 
-              <Metric
-                label="Rejected"
-                value={rejectedCount}
-                type="rejected"
-              />
+              <Metric label="Rejected" value={rejectedCount} type="rejected" />
 
-              <Metric
-                label="Avg. Score"
-                value={`${averageScore}%`}
-                type="score"
-              />
+              <Metric label="Avg. Score" value={`${averageScore}%`} type="score" />
             </div>
           </div>
         </section>
@@ -307,7 +290,7 @@ export default function Verification() {
 
         {/* EMPTY */}
         {!loading && filteredEvidence.length === 0 && (
-          <section className="mt-6 flex min-h-[340px] flex-col items-center justify-center rounded-3xl border border-dashed border-slate-300 bg-white px-6 text-center">
+          <section className="mt-6 flex min-h-[340px] flex-col items-center justify-center rounded-lg border border-dashed border-slate-300 bg-white px-6 text-center">
             <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-indigo-50 text-indigo-600">
               <FileCheck2 size={26} />
             </div>
@@ -319,10 +302,13 @@ export default function Verification() {
             </h3>
 
             <p className="mt-2 max-w-md text-sm leading-6 text-slate-500">
-              {search || filter !== "all"
+              {!selectedProjectId
+                ? "Select a project to review its submitted proof."
+                : search || filter !== "all"
                 ? "Try another search or verification filter."
                 : "Submit proof from a task and it will appear here for AI verification."}
             </p>
+            {!selectedProjectId && <Link to="/projects" className="mt-5 inline-flex items-center gap-2 rounded-md bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-indigo-700"><FolderKanban size={15} />Select a project</Link>}
           </section>
         )}
       </main>
@@ -333,15 +319,25 @@ export default function Verification() {
 function EvidenceCard({ item, verifying, onVerify }) {
   const status = item.verificationStatus || "pending";
   const score = Number(item.verificationScore || 0);
+  const cardTone = status === "verified"
+    ? "border-emerald-200 border-l-4 border-l-emerald-500"
+    : status === "rejected"
+      ? "border-red-200 border-l-4 border-l-red-500"
+      : "border-slate-200 border-l-4 border-l-amber-400";
+  const aiTone = status === "verified"
+    ? "border-emerald-200 bg-emerald-50/40"
+    : status === "rejected"
+      ? "border-red-200 bg-red-50/40"
+      : "border-amber-200 bg-amber-50/30";
 
   return (
-    <article className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition hover:border-indigo-200 hover:shadow-md">
+    <article className={`overflow-hidden rounded-lg border bg-white shadow-sm transition hover:shadow-md ${cardTone}`}>
       <div className="p-5">
         {/* TOP */}
         <div className="flex items-start justify-between gap-4">
           <div className="flex min-w-0 items-start gap-3">
-            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-indigo-50 text-indigo-600">
-              <ShieldCheck size={20} />
+            <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-md ${status === "verified" ? "bg-emerald-50 text-emerald-700" : status === "rejected" ? "bg-red-50 text-red-700" : "bg-amber-50 text-amber-700"}`}>
+              {status === "verified" ? <CheckCircle2 size={19} /> : status === "rejected" ? <XCircle size={19} /> : <Clock3 size={19} />}
             </div>
 
             <div className="min-w-0">
@@ -359,7 +355,7 @@ function EvidenceCard({ item, verifying, onVerify }) {
         </div>
 
         {/* DESCRIPTION */}
-        <div className="mt-5 rounded-xl border border-slate-100 bg-slate-50/70 p-4">
+        <div className="mt-5 rounded-md border border-slate-200 bg-slate-50 p-4">
           <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">
             Submitted proof
           </p>
@@ -400,7 +396,7 @@ function EvidenceCard({ item, verifying, onVerify }) {
         </div>
 
         {/* AI RESULT */}
-        <div className="mt-5 rounded-2xl border border-slate-200 p-4">
+        <div className={`mt-5 rounded-md border p-4 ${aiTone}`}>
           <div className="flex items-center justify-between gap-3">
             <div className="flex items-center gap-2">
               <BrainCircuit
@@ -413,14 +409,14 @@ function EvidenceCard({ item, verifying, onVerify }) {
               </p>
             </div>
 
-            <p className="text-lg font-bold text-indigo-600">
+            <p className={`text-lg font-bold ${status === "verified" ? "text-emerald-700" : status === "rejected" ? "text-red-700" : "text-indigo-700"}`}>
               {score}%
             </p>
           </div>
 
           <div className="mt-3 h-2 overflow-hidden rounded-full bg-slate-100">
             <div
-              className="h-full rounded-full bg-indigo-600 transition-all"
+              className={`h-full rounded-full transition-all ${status === "verified" ? "bg-emerald-600" : status === "rejected" ? "bg-red-600" : "bg-indigo-600"}`}
               style={{
                 width: `${Math.min(100, Math.max(0, score))}%`,
               }}
@@ -432,7 +428,8 @@ function EvidenceCard({ item, verifying, onVerify }) {
               Confidence
             </span>
 
-            <span className="rounded-lg bg-slate-100 px-2 py-1 text-xs font-semibold capitalize text-slate-700">
+            <span className="inline-flex items-center gap-1 rounded-md bg-white px-2 py-1 text-xs font-semibold capitalize text-slate-700 ring-1 ring-inset ring-slate-200">
+              <Activity size={12} />
               {item.verificationConfidence || "low"}
             </span>
           </div>
@@ -489,6 +486,12 @@ function EvidenceCard({ item, verifying, onVerify }) {
 }
 
 function Metric({ label, value, type }) {
+  const icons = {
+    pending: <Clock3 size={13} />,
+    verified: <CheckCircle2 size={13} />,
+    rejected: <XCircle size={13} />,
+    score: <BrainCircuit size={13} />,
+  };
   const styles = {
     pending: "bg-amber-50 border-amber-100 text-amber-700",
     verified:
@@ -503,7 +506,8 @@ function Metric({ label, value, type }) {
         styles[type] || styles.score
       }`}
     >
-      <p className="text-xs font-semibold opacity-75">
+      <p className="flex items-center gap-1.5 text-xs font-semibold opacity-75">
+        {icons[type]}
         {label}
       </p>
 

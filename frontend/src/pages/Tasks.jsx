@@ -1,12 +1,14 @@
 import { useEffect, useMemo, useState } from "react";
+import { Link } from "react-router-dom";
 import { useProject } from "../context/ProjectContext";
 import {
   Plus,
   Search,
   CheckCircle2,
-  Clock3,
   Circle,
+  Clock3,
   AlertTriangle,
+  FolderKanban,
   ListTodo,
   CalendarDays,
   UserRound,
@@ -176,9 +178,9 @@ export default function Tasks() {
   const overdueCount = tasks.filter(isOverdue).length;
 
   return (
-    <div className="min-h-screen bg-[#f6f8fc]">
+    <div className="min-h-screen bg-[#f4f6fb]">
       {/* HEADER */}
-      <header className="sticky top-0 z-20 border-b border-slate-200 bg-white/90 backdrop-blur-xl">
+      <header className="border-b border-slate-200 bg-[#f4f6fb]">
         <div className="flex items-center justify-between px-6 py-4 lg:px-8">
           <div>
             <p className="text-xs font-bold uppercase tracking-[0.16em] text-indigo-600">
@@ -193,7 +195,8 @@ export default function Tasks() {
           <button
             type="button"
             onClick={() => setShowCreate(true)}
-            className="flex items-center gap-2 rounded-xl bg-slate-950 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-slate-800"
+            disabled={!selectedProjectId}
+            className="flex items-center gap-2 rounded-md bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-50"
           >
             <Plus size={17} />
             Create Task
@@ -203,10 +206,8 @@ export default function Tasks() {
 
       <main className="px-6 py-7 lg:px-8">
         {/* HERO */}
-        <section className="relative overflow-hidden rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-          <div className="absolute -right-20 -top-24 h-64 w-64 rounded-full bg-indigo-100/70 blur-3xl" />
-
-          <div className="relative flex flex-col justify-between gap-6 xl:flex-row xl:items-end">
+        <section className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
+          <div className="flex flex-col justify-between gap-6 xl:flex-row xl:items-end">
             <div>
               <div className="flex items-center gap-2 text-sm font-semibold text-indigo-600">
                 <Sparkles size={16} />
@@ -223,7 +224,7 @@ export default function Tasks() {
               </p>
             </div>
 
-            <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+            <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
               <StatCard
                 title="Todo"
                 value={todoCount}
@@ -372,7 +373,8 @@ export default function Tasks() {
 
                   <div className="mt-4 flex flex-wrap gap-2">
                     {task.completionClaimed && (
-                      <span className="rounded-lg bg-amber-50 px-2.5 py-1.5 text-xs font-semibold text-amber-700">
+                      <span className="inline-flex items-center gap-1.5 rounded-md bg-amber-50 px-2.5 py-1.5 text-xs font-semibold text-amber-800">
+                        <AlertTriangle size={13} />
                         Completion claimed
                       </span>
                     )}
@@ -436,26 +438,32 @@ export default function Tasks() {
 
         {/* EMPTY */}
         {!loading && filteredTasks.length === 0 && (
-          <section className="mt-6 flex min-h-80 flex-col items-center justify-center rounded-3xl border border-dashed border-slate-300 bg-white px-6 text-center">
+          <section className="mt-6 flex min-h-80 flex-col items-center justify-center rounded-lg border border-dashed border-slate-300 bg-white px-6 text-center">
             <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-indigo-50 text-indigo-600">
               <ListTodo size={25} />
             </div>
 
             <h3 className="mt-4 text-lg font-bold text-slate-950">
-              No tasks found
+              {!selectedProjectId ? "Select a project to view tasks" : "No tasks found"}
             </h3>
 
             <p className="mt-2 max-w-md text-sm text-slate-500">
-              {search || filter !== "all"
+              {!selectedProjectId
+                ? "Choose a project before creating or updating tasks."
+                : search || filter !== "all"
                 ? "Change your search or filter to find another task."
                 : "Create your first task to start tracking verified work."}
             </p>
 
-            {!search && filter === "all" && (
+            {!selectedProjectId ? (
+              <Link to="/projects" className="mt-5 inline-flex items-center gap-2 rounded-md bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-indigo-700">
+                <FolderKanban size={16} /> Select a project
+              </Link>
+            ) : !search && filter === "all" && (
               <button
                 type="button"
                 onClick={() => setShowCreate(true)}
-                className="mt-5 flex items-center gap-2 rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white"
+                className="mt-5 flex items-center gap-2 rounded-md bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white"
               >
                 <Plus size={16} />
                 Create Task
@@ -621,23 +629,19 @@ function StatCard({ title, value, icon, danger = false }) {
 }
 
 function TaskStatus({ status }) {
-  const styles = {
-    todo: "bg-slate-100 text-slate-600",
-    "in-progress": "bg-indigo-50 text-indigo-700",
-    completed: "bg-emerald-50 text-emerald-700",
+  const states = {
+    todo: { style: "bg-slate-100 text-slate-700", icon: <Circle size={13} /> },
+    "in-progress": { style: "bg-indigo-50 text-indigo-800", icon: <Clock3 size={13} /> },
+    completed: { style: "bg-emerald-50 text-emerald-800", icon: <CheckCircle2 size={13} /> },
   };
+  const current = states[status] || states.todo;
 
   return (
     <span
-      className={`shrink-0 rounded-full px-2.5 py-1 text-xs font-semibold ${
-        styles[status] || styles.todo
-      }`}
+      className={`inline-flex shrink-0 items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold ${current.style}`}
     >
-      {status === "in-progress"
-        ? "In progress"
-        : status === "completed"
-          ? "Completed"
-          : "Todo"}
+      {current.icon}
+      {status === "in-progress" ? "In progress" : status === "completed" ? "Completed" : "Todo"}
     </span>
   );
 }
