@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useProject } from "../context/ProjectContext";
 import {
   BrainCircuit,
@@ -30,42 +30,58 @@ export default function Intelligence() {
   const [reportLoading, setReportLoading] = useState(false);
 
   const [error, setError] = useState("");
+  const insightsRequest = useRef(0);
+  const reportRequest = useRef(0);
+  const selectedProjectRef = useRef(selectedProjectId);
 
   useEffect(() => {
+    selectedProjectRef.current = selectedProjectId;
+    insightsRequest.current += 1;
+    reportRequest.current += 1;
     setInsights(null);
     setReport(null);
+    setInsightsLoading(false);
+    setReportLoading(false);
     setError("");
   }, [selectedProjectId]);
 
   async function analyzeProject() {
     if (!selectedProjectId) return;
+    const projectId = selectedProjectId;
+    const requestId = ++insightsRequest.current;
 
     try {
       setInsightsLoading(true);
       setError("");
 
-      const data = await getProjectInsights(selectedProjectId, token);
-      setInsights(data);
+      const data = await getProjectInsights(projectId, token);
+      if (requestId === insightsRequest.current && projectId === selectedProjectRef.current) setInsights(data);
     } catch (err) {
-      setError(err.message || "Unable to generate AI insights.");
+      if (requestId === insightsRequest.current && projectId === selectedProjectRef.current) {
+        setError(err.message || "Unable to generate AI insights.");
+      }
     } finally {
-      setInsightsLoading(false);
+      if (requestId === insightsRequest.current) setInsightsLoading(false);
     }
   }
 
   async function generateReport() {
     if (!selectedProjectId) return;
+    const projectId = selectedProjectId;
+    const requestId = ++reportRequest.current;
 
     try {
       setReportLoading(true);
       setError("");
 
-      const data = await getProjectReport(selectedProjectId, token);
-      setReport(data);
+      const data = await getProjectReport(projectId, token);
+      if (requestId === reportRequest.current && projectId === selectedProjectRef.current) setReport(data);
     } catch (err) {
-      setError(err.message || "Unable to generate project report.");
+      if (requestId === reportRequest.current && projectId === selectedProjectRef.current) {
+        setError(err.message || "Unable to generate project report.");
+      }
     } finally {
-      setReportLoading(false);
+      if (requestId === reportRequest.current) setReportLoading(false);
     }
   }
 

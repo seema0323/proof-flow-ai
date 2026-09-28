@@ -44,6 +44,10 @@ export function getProjects(token) {
   return request("/api/projects", token);
 }
 
+export function getProjectMembers(projectId, token) {
+  return request(`/api/projects/${projectId}/members`, token);
+}
+
 export function createProject(projectData, token) {
   return request("/api/projects", token, {
     method: "POST",
@@ -60,6 +64,11 @@ export function updateTaskStatus(taskId, status, token) {
   return request(`/api/tasks/${taskId}/status`, token, {
     method: "PATCH",
     body: JSON.stringify({ status }),
+  });
+}
+export function claimTaskCompletion(taskId, token) {
+  return request(`/api/tasks/${taskId}/claim-complete`, token, {
+    method: "PATCH",
   });
 }
 export function getTasks(projectId, token) {
@@ -88,6 +97,10 @@ export async function submitEvidence(evidenceData, token) {
       "githubCommitSha",
       evidenceData.githubCommitSha
     );
+  }
+
+  if (evidenceData.githubUrl) {
+    formData.append("githubUrl", evidenceData.githubUrl);
   }
 
   if (evidenceData.deployedUrl) {

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useProject } from "../context/ProjectContext";
 import {
   Users,
@@ -13,9 +13,8 @@ import {
   Crown,
 } from "lucide-react";
 
-import { getTasks } from "../services/api";
+import { getProjectMembers, getTasks } from "../services/api";
 import { useAuth } from "../context/AuthContext";
-const API_URL = "http://localhost:5000";
 
 export default function Team() {
   const { selectedProjectId } = useProject();
@@ -25,8 +24,10 @@ export default function Team() {
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const requestSequence = useRef(0);
 
   async function loadTeam() {
+    const sequence = ++requestSequence.current;
     if (!selectedProjectId) {
       setMembers([]);
       setTasks([]);
@@ -37,23 +38,14 @@ export default function Team() {
     try {
       setLoading(true);
       setError("");
+      setMembers([]);
+      setTasks([]);
 
-      const [memberResponse, taskData] = await Promise.all([
-        fetch(`${API_URL}/api/projects/${selectedProjectId}/members`, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }),
+      const [memberData, taskData] = await Promise.all([
+        getProjectMembers(selectedProjectId, token),
         getTasks(selectedProjectId, token),
       ]);
-
-      const memberData = await memberResponse.json();
-
-      if (!memberResponse.ok) {
-        throw new Error(
-          memberData.message || "Unable to load team members."
-        );
-      }
+      if (sequence !== requestSequence.current) return;
 
       const memberList = Array.isArray(memberData)
         ? memberData
@@ -66,14 +58,19 @@ export default function Team() {
       setMembers(memberList);
       setTasks(taskList);
     } catch (err) {
-      setError(err.message || "Unable to load team.");
+      if (sequence === requestSequence.current) {
+        setError(err.message || "Unable to load team.");
+      }
     } finally {
-      setLoading(false);
+      if (sequence === requestSequence.current) setLoading(false);
     }
   }
 
   useEffect(() => {
     loadTeam();
+    return () => {
+      requestSequence.current += 1;
+    };
   }, [selectedProjectId, token]);
 
   const normalizedMembers = useMemo(() => {

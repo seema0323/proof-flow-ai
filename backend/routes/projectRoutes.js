@@ -208,47 +208,54 @@ router.get("/:projectId/health", authMiddleware, async (req, res) => {
         : Math.round((claimedTasks / totalTasks) * 100);
 
     const latestEvidence = await Evidence.aggregate([
-  { $match: { task: { $in: taskIds } } },
-  { $sort: { createdAt: -1 } },
-  {
-    $group: {
-      _id: "$task",
-      latestStatus: { $first: "$verificationStatus" },
-    },
-  },
-]);
+      { $match: { task: { $in: taskIds } } },
+      { $sort: { createdAt: -1 } },
+      {
+        $group: {
+          _id: "$task",
+          latestStatus: { $first: "$verificationStatus" },
+        },
+      },
+    ]);
 
-const verifiedTaskIds = latestEvidence
-  .filter((item) => item.latestStatus === "verified")
-  .map((item) => item._id);
+    const verifiedTaskIds = latestEvidence
+      .filter((item) => item.latestStatus === "verified")
+      .map((item) => item._id);
     const verifiedProgress =
       totalTasks === 0
         ? 0
         : Math.round(
             (verifiedTaskIds.length / totalTasks) * 100
           );
-          let riskLevel = "low";
+    const progressGap = claimedProgress - verifiedProgress;
+    const verifiedTaskIdSet = new Set(
+      verifiedTaskIds.map((taskId) => taskId.toString())
+    );
+    const unverifiedClaims = tasks.filter(
+      (task) =>
+        task.completionClaimed &&
+        !verifiedTaskIdSet.has(task._id.toString())
+    ).length;
+    let riskLevel = "low";
 
-const today = new Date();
+    const today = new Date();
 
-const overdueTasks = tasks.filter(
-  (task) =>
-    task.deadline &&
-    new Date(task.deadline) < today &&
-    task.status !== "completed"
-).length;
+    const overdueTasks = tasks.filter((task) => {
+      if (!task.deadline || task.status === "completed") return false;
+      const deadline = new Date(task.deadline);
+      deadline.setHours(23, 59, 59, 999);
+      return deadline < today;
+    }).length;
 
-const unverifiedClaims = claimedTasks - verifiedTaskIds.length;
-
-if (overdueTasks >= 2 || unverifiedClaims >= 2) {
-  riskLevel = "high";
-} else if (
-  overdueTasks === 1 ||
-  unverifiedClaims === 1 ||
-  verifiedProgress < 50
-) {
-  riskLevel = "medium";
-}
+    if (overdueTasks >= 2 || unverifiedClaims >= 2) {
+      riskLevel = "high";
+    } else if (
+      overdueTasks === 1 ||
+      unverifiedClaims === 1 ||
+      verifiedProgress < 50
+    ) {
+      riskLevel = "medium";
+    }
 
     res.json({
       message: "Project health fetched successfully",
@@ -261,9 +268,10 @@ if (overdueTasks >= 2 || unverifiedClaims >= 2) {
         progress,
         claimedProgress,
         verifiedProgress,
+        progressGap,
         overdueTasks,
-unverifiedClaims,
-riskLevel,
+        unverifiedClaims,
+        riskLevel,
       },
     });
   } catch (error) {

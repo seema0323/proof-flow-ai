@@ -8,6 +8,15 @@ const router = express.Router();
 // Create Task - only owner
 router.post("/", authMiddleware, async (req, res) => {
   try {
+    const allowedStatus = ["todo", "in-progress", "completed"];
+    const status = req.body.status || "todo";
+
+    if (!allowedStatus.includes(status)) {
+      return res.status(400).json({
+        message: "Invalid task status",
+      });
+    }
+
     const project = await Project.findOne({
       _id: req.body.projectId,
       owner: req.user.userId,
@@ -26,7 +35,9 @@ router.post("/", authMiddleware, async (req, res) => {
           member.user.toString() === req.body.assignedTo
       );
 
-      if (!isMember) {
+      const isOwner = project.owner.toString() === req.body.assignedTo;
+
+      if (!isMember && !isOwner) {
         return res.status(400).json({
           message: "Assigned user is not a member of this project",
         });
@@ -39,6 +50,7 @@ router.post("/", authMiddleware, async (req, res) => {
       project: req.body.projectId,
       assignedTo: req.body.assignedTo || null,
       deadline: req.body.deadline,
+      status,
     });
 
     res.status(201).json({

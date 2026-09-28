@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useProject } from "../context/ProjectContext";
 import {
   Users,
@@ -17,6 +17,7 @@ import { FaGithub } from "react-icons/fa";
 import {
   getGitHubCommits,
   getGitHubContributors,
+  getProjects,
 } from "../services/api";
 import { useAuth } from "../context/AuthContext";
 
@@ -25,28 +26,49 @@ export default function GitHubActivity() {
   const { token } = useAuth();
   const [commits, setCommits] = useState([]);
   const [contributors, setContributors] = useState([]);
+  const [project, setProject] = useState(null);
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState("");
+  const requestSequence = useRef(0);
 
   async function loadGitHubData(refresh = false) {
+    const sequence = ++requestSequence.current;
     if (!selectedProjectId) {
       setCommits([]);
       setContributors([]);
+      setProject(null);
       setLoading(false);
       return;
     }
 
     try {
-      refresh ? setRefreshing(true) : setLoading(true);
+      if (refresh) setRefreshing(true);
+      else setLoading(true);
       setError("");
+      setCommits([]);
+      setContributors([]);
 
-      const [commitResponse, contributorResponse] =
-        await Promise.all([
+      const projectResponse = await getProjects(token);
+      if (sequence !== requestSequence.current) return;
+      const projectList = projectResponse.projects || projectResponse;
+      const selectedProject = projectList.find((item) => item._id === selectedProjectId);
+      setProject(selectedProject || null);
+
+      if (!selectedProject) {
+        throw new Error("Selected project is unavailable or access was denied.");
+      }
+
+      if (!selectedProject.githubOwner || !selectedProject.githubRepoName) {
+        return;
+      }
+
+      const [commitResponse, contributorResponse] = await Promise.all([
           getGitHubCommits(selectedProjectId, token),
           getGitHubContributors(selectedProjectId, token),
         ]);
+      if (sequence !== requestSequence.current) return;
 
       const commitData = Array.isArray(commitResponse)
         ? commitResponse
@@ -65,18 +87,22 @@ export default function GitHubActivity() {
       setCommits(commitData);
       setContributors(contributorData);
     } catch (err) {
-      console.error(err);
-      setError(
-        err?.message || "Unable to load GitHub activity."
-      );
+      if (sequence === requestSequence.current) {
+        setError(err?.message || "Unable to load GitHub activity.");
+      }
     } finally {
-      setLoading(false);
-      setRefreshing(false);
+      if (sequence === requestSequence.current) {
+        setLoading(false);
+        setRefreshing(false);
+      }
     }
   }
 
   useEffect(() => {
     loadGitHubData();
+    return () => {
+      requestSequence.current += 1;
+    };
   }, [selectedProjectId, token]);
 
   const filteredCommits = useMemo(() => {
@@ -98,6 +124,7 @@ export default function GitHubActivity() {
   }, [commits, search]);
 
   const latestCommit = commits[0];
+  const hasRepository = Boolean(project?.githubOwner && project?.githubRepoName);
 
   return (
     <div className="min-h-screen bg-[#f6f8fc]">
@@ -165,8 +192,8 @@ export default function GitHubActivity() {
               <Metric
                 icon={<Activity size={16} />}
                 label="Connection"
-                value="Live"
-                success
+                value={hasRepository ? "Connected" : "Not connected"}
+                success={hasRepository}
               />
             </div>
           </div>
@@ -202,27 +229,19 @@ export default function GitHubActivity() {
                       Connected Repository
                     </div>
 
-                    <h3 className="mt-3 text-xl font-bold">
-                      seema0323 / proof-flow-ai
+                    <h3 className="mt-3 break-words text-xl font-bold">
+                      {hasRepository ? `${project.githubOwner} / ${project.githubRepoName}` : "No repository connected"}
                     </h3>
 
-                    <p className="mt-2 text-sm leading-6 text-slate-400">
-                      GitHub activity is connected to
-                      ProofFlow&apos;s evidence verification
-                      pipeline.
-                    </p>
+                    <p className="mt-2 text-sm leading-6 text-slate-400">{hasRepository ? "Activity shown here belongs to the selected project repository." : "Connect a GitHub repository to this project to load real commits and contributors."}</p>
                   </div>
 
-                  <div className="rounded-xl bg-emerald-500/10 p-2 text-emerald-400">
-                    <CheckCircle2 size={20} />
+                  <div className={`rounded-xl p-2 ${hasRepository ? "bg-emerald-500/10 text-emerald-400" : "bg-slate-700/50 text-slate-400"}`}>
+                    {hasRepository ? <CheckCircle2 size={20} /> : <Activity size={20} />}
                   </div>
                 </div>
 
-                <div className="mt-6 flex flex-wrap gap-2">
-                  <Tag text="REST API connected" />
-                  <Tag text="Commit verification" />
-                  <Tag text="Contributor tracking" />
-                </div>
+                {hasRepository && project.githubRepo && <a href={project.githubRepo} target="_blank" rel="noreferrer" className="mt-5 inline-flex items-center gap-1.5 text-sm font-semibold text-indigo-200 hover:text-white">Open repository <ExternalLink size={14} /></a>}
               </div>
 
               <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
@@ -336,14 +355,6 @@ export default function GitHubActivity() {
         )}
       </main>
     </div>
-  );
-}
-
-function Tag({ text }) {
-  return (
-    <span className="rounded-lg bg-white/5 px-3 py-1.5 text-xs font-medium text-slate-300">
-      {text}
-    </span>
   );
 }
 
@@ -500,7 +511,7 @@ function getCommitAuthor(commit) {
     commit?.committer?.login ||
     commit?.commit?.author?.name ||
     commit?.commit?.committer?.name ||
-    "seema0323"
+            "Unknown author"
   );
 }
 
@@ -547,7 +558,7 @@ function getContributorName(contributor) {
     contributor?.author?.name ||
     contributor?.user?.login ||
     contributor?.user?.name ||
-    "seema0323"
+    "Unknown contributor"
   );
 }
 

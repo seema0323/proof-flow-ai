@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { useProject } from "../context/ProjectContext";
 import {
@@ -33,9 +33,12 @@ export default function Verification() {
 
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState("all");
+  const requestSequence = useRef(0);
+  const selectedProjectRef = useRef(selectedProjectId);
 
-  async function loadVerificationData() {
-    if (!selectedProjectId) {
+  async function loadVerificationData(projectId = selectedProjectId) {
+    const sequence = ++requestSequence.current;
+    if (!projectId) {
       setEvidence([]);
       setLoading(false);
       return;
@@ -44,8 +47,10 @@ export default function Verification() {
     try {
       setLoading(true);
       setError("");
+      setEvidence([]);
 
-      const taskData = await getTasks(selectedProjectId, token);
+      const taskData = await getTasks(projectId, token);
+      if (sequence !== requestSequence.current) return;
       const tasks = Array.isArray(taskData)
         ? taskData
         : taskData?.tasks || [];
@@ -68,6 +73,7 @@ export default function Verification() {
       });
 
       const results = await Promise.all(evidenceRequests);
+      if (sequence !== requestSequence.current) return;
 
       const allEvidence = results
         .flat()
@@ -79,28 +85,40 @@ export default function Verification() {
 
       setEvidence(allEvidence);
     } catch (err) {
-      setError(err.message || "Unable to load verification data.");
+      if (sequence === requestSequence.current) {
+        setError(err.message || "Unable to load verification data.");
+      }
     } finally {
-      setLoading(false);
+      if (sequence === requestSequence.current) setLoading(false);
     }
   }
 
   useEffect(() => {
+    selectedProjectRef.current = selectedProjectId;
     loadVerificationData();
+    return () => {
+      requestSequence.current += 1;
+    };
   }, [selectedProjectId, token]);
 
   async function handleAIVerify(evidenceId) {
+    const projectId = selectedProjectId;
     try {
       setVerifyingId(evidenceId);
       setError("");
 
-      await verifyEvidenceWithAI(evidenceId, token);
-
-      await loadVerificationData();
+      const result = await verifyEvidenceWithAI(evidenceId, token);
+      if (projectId !== selectedProjectRef.current) return;
+      setEvidence((current) => current.map((item) =>
+        item._id === evidenceId ? { ...item, ...result.evidence, taskInfo: item.taskInfo } : item
+      ));
+      await loadVerificationData(projectId);
     } catch (err) {
-      setError(err.message || "AI verification failed.");
+      if (projectId === selectedProjectRef.current) {
+        setError(err.message || "AI verification failed.");
+      }
     } finally {
-      setVerifyingId("");
+      if (projectId === selectedProjectRef.current) setVerifyingId("");
     }
   }
 
@@ -319,6 +337,7 @@ export default function Verification() {
 function EvidenceCard({ item, verifying, onVerify }) {
   const status = item.verificationStatus || "pending";
   const score = Number(item.verificationScore || 0);
+  const hasResult = Boolean(item.verificationReason || score > 0 || status !== "pending");
   const cardTone = status === "verified"
     ? "border-emerald-200 border-l-4 border-l-emerald-500"
     : status === "rejected"
@@ -410,7 +429,7 @@ function EvidenceCard({ item, verifying, onVerify }) {
             </div>
 
             <p className={`text-lg font-bold ${status === "verified" ? "text-emerald-700" : status === "rejected" ? "text-red-700" : "text-indigo-700"}`}>
-              {score}%
+              {hasResult ? `${score}%` : "Not scored"}
             </p>
           </div>
 
@@ -418,7 +437,7 @@ function EvidenceCard({ item, verifying, onVerify }) {
             <div
               className={`h-full rounded-full transition-all ${status === "verified" ? "bg-emerald-600" : status === "rejected" ? "bg-red-600" : "bg-indigo-600"}`}
               style={{
-                width: `${Math.min(100, Math.max(0, score))}%`,
+                width: `${hasResult ? Math.min(100, Math.max(0, score)) : 0}%`,
               }}
             />
           </div>
@@ -430,21 +449,19 @@ function EvidenceCard({ item, verifying, onVerify }) {
 
             <span className="inline-flex items-center gap-1 rounded-md bg-white px-2 py-1 text-xs font-semibold capitalize text-slate-700 ring-1 ring-inset ring-slate-200">
               <Activity size={12} />
-              {item.verificationConfidence || "low"}
+              {hasResult ? item.verificationConfidence || "low" : "Not evaluated"}
             </span>
           </div>
 
-          {item.verificationReason && (
-            <div className="mt-3 border-t border-slate-100 pt-3">
+          <div className="mt-3 border-t border-slate-100 pt-3">
               <p className="text-xs font-semibold text-slate-400">
                 AI reasoning
               </p>
 
               <p className="mt-1 text-sm leading-5 text-slate-600">
-                {item.verificationReason}
+                {item.verificationReason || "Awaiting AI review."}
               </p>
-            </div>
-          )}
+          </div>
         </div>
 
         {/* FOOTER */}
@@ -457,6 +474,7 @@ function EvidenceCard({ item, verifying, onVerify }) {
             <p className="mt-0.5 text-sm font-semibold text-slate-700">
               {item.submittedBy?.name || "Project member"}
             </p>
+            {item.submittedBy?.email && <p className="mt-0.5 text-xs text-slate-500">{item.submittedBy.email}</p>}
           </div>
 
           <button

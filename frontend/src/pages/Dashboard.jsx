@@ -28,7 +28,6 @@ import {
   getProjects,
   getTasks,
   submitEvidence,
-  verifyEvidenceWithAI,
 } from "../services/api";
 
 export default function Dashboard() {
@@ -50,6 +49,7 @@ export default function Dashboard() {
   const [verificationResult, setVerificationResult] = useState(null);
   const [newEvidence, setNewEvidence] = useState({
     description: "",
+    githubUrl: "",
     githubCommitSha: "",
     deployedUrl: "",
     file: null,
@@ -67,6 +67,9 @@ export default function Dashboard() {
       setTasks([]);
       setCommits([]);
       setContributors([]);
+      setSelectedTask(null);
+      setVerificationResult(null);
+      setNewEvidence({ description: "", githubUrl: "", githubCommitSha: "", deployedUrl: "", file: null });
 
       try {
         if (!selectedProjectId) {
@@ -81,19 +84,33 @@ export default function Dashboard() {
 
         const projectData = await getProjects(token);
         if (!isCurrent) return;
-        setProjects(projectData.projects || projectData);
+        const projectList = projectData.projects || projectData;
+        setProjects(projectList);
+        const currentProject = projectList.find((item) => item._id === selectedProjectId);
+        if (!currentProject) throw new Error("Selected project is unavailable or access was denied.");
 
         const taskData = await getTasks(selectedProjectId, token);
         if (!isCurrent) return;
         setTasks(taskData.tasks || taskData);
 
-        const commitData = await getGitHubCommits(selectedProjectId, token);
-        if (!isCurrent) return;
-        setCommits(commitData.commits || commitData);
-
-        const contributorData = await getGitHubContributors(selectedProjectId, token);
-        if (!isCurrent) return;
-        setContributors(contributorData.contributors || contributorData);
+        if (currentProject.githubOwner && currentProject.githubRepoName) {
+          const [commitResult, contributorResult] = await Promise.allSettled([
+            getGitHubCommits(selectedProjectId, token),
+            getGitHubContributors(selectedProjectId, token),
+          ]);
+          if (!isCurrent) return;
+          if (commitResult.status === "fulfilled") {
+            const commitData = commitResult.value;
+            setCommits(commitData.commits || commitData);
+          }
+          if (contributorResult.status === "fulfilled") {
+            const contributorData = contributorResult.value;
+            setContributors(contributorData.contributors || contributorData);
+          }
+          if (commitResult.status === "rejected" || contributorResult.status === "rejected") {
+            setError("Some GitHub activity could not be loaded. Project health and tasks are current.");
+          }
+        }
       } catch (loadError) {
         if (isCurrent) setError(loadError.message || "Unable to load project data.");
       } finally {
@@ -108,11 +125,7 @@ export default function Dashboard() {
   }, [selectedProjectId, token]);
 
   const project = projects.find((item) => item._id === selectedProjectId);
-  const claimedProgress = Number(health?.claimedProgress);
-  const verifiedProgress = Number(health?.verifiedProgress);
-  const progressGap = Number.isFinite(claimedProgress) && Number.isFinite(verifiedProgress)
-    ? claimedProgress - verifiedProgress
-    : null;
+  const progressGap = health?.progressGap;
 
   async function loadInsights() {
     if (!selectedProjectId) return;
@@ -145,7 +158,7 @@ export default function Dashboard() {
   async function openEvidenceForm(task) {
     setSelectedTask(task);
     setVerificationResult(null);
-    setNewEvidence({ description: "", githubCommitSha: "", deployedUrl: "", file: null });
+    setNewEvidence({ description: "", githubUrl: "", githubCommitSha: "", deployedUrl: "", file: null });
 
     try {
       const data = await getEvidence(task._id, token);
@@ -160,6 +173,17 @@ export default function Dashboard() {
     event.preventDefault();
     if (!selectedTask) return;
 
+    const hasProof = newEvidence.githubUrl.trim() || newEvidence.githubCommitSha.trim() || newEvidence.deployedUrl.trim() || newEvidence.file;
+    if (!hasProof) {
+      setError("Add a GitHub link, commit SHA, deployed URL, or file as supporting proof.");
+      return;
+    }
+
+    if (newEvidence.file && newEvidence.file.size > 5 * 1024 * 1024) {
+      setError("The selected file must be 5 MB or smaller.");
+      return;
+    }
+
     try {
       setSubmitting(true);
       setError("");
@@ -167,18 +191,18 @@ export default function Dashboard() {
         {
           taskId: selectedTask._id,
           description: newEvidence.description,
+          githubUrl: newEvidence.githubUrl,
           githubCommitSha: newEvidence.githubCommitSha,
           deployedUrl: newEvidence.deployedUrl,
           file: newEvidence.file,
         },
         token
       );
-      const verified = await verifyEvidenceWithAI(saved.evidence._id, token);
-      setVerificationResult(verified.evidence);
-      setNewEvidence({ description: "", githubCommitSha: "", deployedUrl: "", file: null });
+      setVerificationResult(saved.evidence);
+      setNewEvidence({ description: "", githubUrl: "", githubCommitSha: "", deployedUrl: "", file: null });
       setSelectedTask(null);
     } catch (submitError) {
-      setError(submitError.message || "Unable to submit and verify evidence.");
+      setError(submitError.message || "Unable to submit evidence.");
     } finally {
       setSubmitting(false);
     }
@@ -229,7 +253,7 @@ export default function Dashboard() {
             <section className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
               <ProgressMetric label="Claimed progress" value={health?.claimedProgress} note={`${health?.claimedTasks ?? "—"} tasks claimed complete`} tone="slate" loading={loading} icon={<Activity size={17} />} />
               <ProgressMetric label="Verified progress" value={health?.verifiedProgress} note="Evidence-backed work" tone="indigo" loading={loading} icon={<ShieldCheck size={17} />} />
-              <ProgressMetric label="Progress gap" value={progressGap === null ? null : `${Math.abs(progressGap)}%`} note={progressGap === null ? "Claimed vs. verified" : progressGap > 0 ? "Claimed work awaiting proof" : progressGap < 0 ? "Verified progress leads claims" : "Claims match verified work"} tone={progressGap > 0 ? "amber" : "emerald"} loading={loading} icon={<AlertTriangle size={17} />} />
+              <ProgressMetric label="Progress gap" value={progressGap === undefined ? null : `${Math.abs(progressGap)}%`} note={progressGap === undefined ? "Claimed vs. verified" : progressGap > 0 ? "Claimed work awaiting proof" : progressGap < 0 ? "Verified progress leads claims" : "Claims match verified work"} tone={progressGap > 0 ? "amber" : "emerald"} loading={loading} icon={<AlertTriangle size={17} />} />
               <ProgressMetric label="Project health" value={health?.progress} note={`${health?.completedTasks ?? "—"} of ${health?.totalTasks ?? "—"} tasks completed`} tone="emerald" loading={loading} icon={<CheckCircle2 size={17} />} />
             </section>
 
@@ -324,14 +348,14 @@ export default function Dashboard() {
               </div>
               {loading ? <LoadingRows /> : tasks.length ? <div className="divide-y divide-slate-100">{tasks.slice(0, 5).map((task) => <div key={task._id} className="flex flex-col gap-3 py-3 sm:flex-row sm:items-center sm:justify-between">
                 <div className="min-w-0"><p className="truncate text-sm font-semibold text-slate-800">{task.title}</p><p className="mt-1 truncate text-xs text-slate-500">{task.assignedTo?.name || "Unassigned"}{task.deadline ? ` · Due ${formatDate(task.deadline)}` : " · No deadline"}</p></div>
-                <div className="flex shrink-0 items-center gap-2"><TaskState status={task.status} /><button type="button" onClick={() => openEvidenceForm(task)} className="inline-flex items-center gap-1.5 rounded-md border border-slate-300 bg-white px-2.5 py-1.5 text-xs font-semibold text-slate-700 transition hover:border-indigo-300 hover:text-indigo-700"><Upload size={13} />Submit proof</button></div>
+                <div className="flex shrink-0 items-center gap-2"><TaskState status={task.status} />{task.completionClaimed ? <button type="button" onClick={() => openEvidenceForm(task)} className="inline-flex items-center gap-1.5 rounded-md border border-slate-300 bg-white px-2.5 py-1.5 text-xs font-semibold text-slate-700 transition hover:border-indigo-300 hover:text-indigo-700"><Upload size={13} />Submit evidence</button> : <Link to="/tasks" className="text-xs font-semibold text-indigo-700 hover:text-indigo-800">Claim in Tasks</Link>}</div>
               </div>)}</div> : <InlineEmpty text="No tasks yet. Create tasks to begin tracking verifiable work." />}
             </section>
           </>
         )}
       </div>
 
-      {verificationResult && !selectedTask && <div role="status" className="fixed bottom-5 right-5 z-40 max-w-sm rounded-lg border border-emerald-200 bg-white p-4 shadow-lg"><div className="flex items-start gap-3"><CheckCircle2 size={18} className="mt-0.5 text-emerald-600" /><div><p className="text-sm font-bold text-slate-900">Evidence {verificationResult.verificationStatus || "submitted"}</p><p className="mt-1 text-xs leading-5 text-slate-600">Score {verificationResult.verificationScore ?? "—"}% · {verificationResult.verificationConfidence || "Confidence pending"}</p></div><button type="button" aria-label="Dismiss verification result" onClick={() => setVerificationResult(null)} className="ml-2 text-slate-400 hover:text-slate-700"><X size={16} /></button></div></div>}
+      {verificationResult && !selectedTask && <div role="status" className="fixed bottom-5 right-5 z-40 max-w-sm rounded-lg border border-emerald-200 bg-white p-4 shadow-lg"><div className="flex items-start gap-3"><CheckCircle2 size={18} className="mt-0.5 text-emerald-600" /><div><p className="text-sm font-bold text-slate-900">Evidence {verificationResult.verificationStatus || "submitted"}</p><p className="mt-1 text-xs leading-5 text-slate-600">{verificationResult.verificationStatus === "pending" && !verificationResult.verificationReason ? "Submitted proof is waiting for AI review." : `Score ${verificationResult.verificationScore ?? "—"}% · Confidence ${verificationResult.verificationConfidence || "—"}`}</p><Link to="/verification" className="mt-2 inline-block text-xs font-semibold text-indigo-700">Open Verification</Link></div><button type="button" aria-label="Dismiss evidence status" onClick={() => setVerificationResult(null)} className="ml-2 text-slate-400 hover:text-slate-700"><X size={16} /></button></div></div>}
 
       {selectedTask && <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#0b1020]/55 p-4 backdrop-blur-sm" onMouseDown={(event) => { if (event.target === event.currentTarget && !submitting) setSelectedTask(null); }}>
         <section role="dialog" aria-modal="true" aria-labelledby="proof-dialog-title" className="max-h-[90vh] w-full max-w-xl overflow-y-auto rounded-lg border border-slate-200 bg-white p-5 shadow-2xl sm:p-6">
@@ -339,10 +363,11 @@ export default function Dashboard() {
           {verificationResult && <div className="mt-4 rounded-md border border-slate-200 bg-slate-50 p-3"><p className="text-sm font-semibold capitalize text-slate-800">Latest proof: {verificationResult.verificationStatus || "submitted"}</p><p className="mt-1 text-xs leading-5 text-slate-600">{verificationResult.verificationReason || "No AI reasoning is available yet."}</p></div>}
           <form onSubmit={handleSubmitEvidence} className="mt-5 space-y-4">
             <Field label="Work description"><textarea required rows={3} value={newEvidence.description} onChange={(event) => setNewEvidence({ ...newEvidence, description: event.target.value })} placeholder="Describe what you completed" className="w-full resize-y rounded-md border border-slate-300 px-3 py-2.5 text-sm outline-none focus:border-indigo-500" /></Field>
-            <Field label="GitHub commit SHA"><input required value={newEvidence.githubCommitSha} onChange={(event) => setNewEvidence({ ...newEvidence, githubCommitSha: event.target.value })} placeholder="Commit SHA" className="w-full rounded-md border border-slate-300 px-3 py-2.5 text-sm outline-none focus:border-indigo-500" /></Field>
+            <Field label="GitHub or commit URL (optional)"><input type="url" value={newEvidence.githubUrl} onChange={(event) => setNewEvidence({ ...newEvidence, githubUrl: event.target.value })} placeholder="https://github.com/..." className="w-full rounded-md border border-slate-300 px-3 py-2.5 text-sm outline-none focus:border-indigo-500" /></Field>
+            <Field label="Commit SHA (optional)"><input value={newEvidence.githubCommitSha} onChange={(event) => setNewEvidence({ ...newEvidence, githubCommitSha: event.target.value })} placeholder="Commit SHA" className="w-full rounded-md border border-slate-300 px-3 py-2.5 text-sm outline-none focus:border-indigo-500" /></Field>
             <Field label="Deployed URL (optional)"><input type="url" value={newEvidence.deployedUrl} onChange={(event) => setNewEvidence({ ...newEvidence, deployedUrl: event.target.value })} placeholder="https://" className="w-full rounded-md border border-slate-300 px-3 py-2.5 text-sm outline-none focus:border-indigo-500" /></Field>
             <Field label="Screenshot or file (optional)"><input type="file" accept="image/*,.pdf" onChange={(event) => setNewEvidence({ ...newEvidence, file: event.target.files?.[0] || null })} className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm" /><span className="mt-1 block text-xs text-slate-500">Maximum file size: 5 MB</span></Field>
-            <div className="flex justify-end gap-2 border-t border-slate-100 pt-4"><button type="button" disabled={submitting} onClick={() => setSelectedTask(null)} className="rounded-md border border-slate-300 px-3.5 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50">Cancel</button><button type="submit" disabled={submitting} className="inline-flex items-center gap-2 rounded-md bg-indigo-600 px-3.5 py-2 text-sm font-semibold text-white transition hover:bg-indigo-700 disabled:opacity-60">{submitting ? <LoaderCircle size={15} className="animate-spin" /> : <Sparkles size={15} />}{submitting ? "Submitting and verifying" : "Submit & verify"}</button></div>
+            <div className="flex justify-end gap-2 border-t border-slate-100 pt-4"><button type="button" disabled={submitting} onClick={() => setSelectedTask(null)} className="rounded-md border border-slate-300 px-3.5 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50">Cancel</button><button type="submit" disabled={submitting} className="inline-flex items-center gap-2 rounded-md bg-indigo-600 px-3.5 py-2 text-sm font-semibold text-white transition hover:bg-indigo-700 disabled:opacity-60">{submitting ? <LoaderCircle size={15} className="animate-spin" /> : <Upload size={15} />}{submitting ? "Uploading evidence" : "Submit evidence"}</button></div>
           </form>
         </section>
       </div>}

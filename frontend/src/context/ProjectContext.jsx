@@ -2,6 +2,7 @@ import {
   createContext,
   useContext,
   useEffect,
+  useCallback,
   useState,
 } from "react";
 
@@ -13,15 +14,15 @@ export function ProjectProvider({ children }) {
       return localStorage.getItem("proofFlowProjectId") || "";
     });
 
-  function selectProject(projectId) {
-    if (!projectId) return;
-
-    setSelectedProjectId(projectId);
-    localStorage.setItem(
-      "proofFlowProjectId",
-      projectId
-    );
-  }
+  const selectProject = useCallback((projectId) => {
+    const nextProjectId = projectId || "";
+    setSelectedProjectId(nextProjectId);
+    if (nextProjectId) {
+      localStorage.setItem("proofFlowProjectId", nextProjectId);
+    } else {
+      localStorage.removeItem("proofFlowProjectId");
+    }
+  }, []);
 
   useEffect(() => {
     if (selectedProjectId) {
@@ -29,6 +30,8 @@ export function ProjectProvider({ children }) {
         "proofFlowProjectId",
         selectedProjectId
       );
+    } else {
+      localStorage.removeItem("proofFlowProjectId");
     }
   }, [selectedProjectId]);
 

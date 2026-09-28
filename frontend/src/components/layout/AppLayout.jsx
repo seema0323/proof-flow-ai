@@ -19,7 +19,7 @@ import { getProjects } from "../../services/api";
 
 export default function AppLayout({ children }) {
   const { logout, token } = useAuth();
-  const { selectedProjectId } = useProject();
+  const { selectedProjectId, selectProject } = useProject();
   const navigate = useNavigate();
   const [projects, setProjects] = useState([]);
 
@@ -29,7 +29,12 @@ export default function AppLayout({ children }) {
     getProjects(token)
       .then((data) => {
         const projectList = Array.isArray(data) ? data : data?.projects || [];
-        if (isCurrent) setProjects(projectList);
+        if (isCurrent) {
+          setProjects(projectList);
+          if (selectedProjectId && !projectList.some((project) => project._id === selectedProjectId)) {
+            selectProject("");
+          }
+        }
       })
       .catch(() => {
         if (isCurrent) setProjects([]);
@@ -38,7 +43,7 @@ export default function AppLayout({ children }) {
     return () => {
       isCurrent = false;
     };
-  }, [token]);
+  }, [token, selectedProjectId, selectProject]);
 
   const selectedProject = projects.find((project) => project._id === selectedProjectId);
   const workspaceItems = [
