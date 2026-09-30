@@ -55,7 +55,7 @@ export default function Verification() {
         ? taskData
         : taskData?.tasks || [];
 
-      const evidenceRequests = tasks.map(async (task) => {
+        const evidenceRequests = tasks.map(async (task) => {
         try {
           const response = await getEvidence(task._id, token);
 
@@ -67,16 +67,18 @@ export default function Verification() {
             ...item,
             taskInfo: task,
           }));
-        } catch {
-          return [];
+            } catch (error) {
+              return { taskTitle: task.title, error };
         }
       });
 
       const results = await Promise.all(evidenceRequests);
       if (sequence !== requestSequence.current) return;
 
-      const allEvidence = results
-        .flat()
+        const failedRequests = results.filter((result) => !Array.isArray(result));
+        const allEvidence = results
+          .filter(Array.isArray)
+          .flat()
         .sort(
           (a, b) =>
             new Date(b.createdAt || 0) -
@@ -84,6 +86,9 @@ export default function Verification() {
         );
 
       setEvidence(allEvidence);
+        if (failedRequests.length) {
+          setError(`${failedRequests.length} task evidence ${failedRequests.length === 1 ? "request failed" : "requests failed"}. Some results may be missing.`);
+        }
     } catch (err) {
       if (sequence === requestSequence.current) {
         setError(err.message || "Unable to load verification data.");

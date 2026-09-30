@@ -163,7 +163,7 @@ export default function Dashboard() {
     try {
       const data = await getEvidence(task._id, token);
       const evidence = Array.isArray(data) ? data : data?.evidence || [];
-      if (evidence.length) setVerificationResult(evidence[evidence.length - 1]);
+      if (evidence.length) setVerificationResult(evidence[0]);
     } catch (loadError) {
       setError(loadError.message || "Unable to load task evidence.");
     }

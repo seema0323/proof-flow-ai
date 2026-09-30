@@ -38,7 +38,20 @@ router.post(
   upload.single("file"),
   async (req, res) => {
     try {
-      const task = await Task.findById(req.body.taskId);
+      const { taskId, description, githubUrl, githubCommitSha, deployedUrl } = req.body;
+      if (!/^[a-f\d]{24}$/i.test(taskId || "")) {
+        return res.status(400).json({ message: "A valid task is required." });
+      }
+
+      if (typeof description !== "string" || !description.trim()) {
+        return res.status(400).json({ message: "Describe the work this evidence supports." });
+      }
+
+      if (!req.file && !githubUrl?.trim() && !githubCommitSha?.trim() && !deployedUrl?.trim()) {
+        return res.status(400).json({ message: "Add a GitHub link, commit SHA, deployed URL, or file as supporting evidence." });
+      }
+
+      const task = await Task.findById(taskId);
 
       if (!task) {
         return res.status(404).json({
@@ -86,12 +99,12 @@ router.post(
   console.log("No file received");
 }
       const evidence = await Evidence.create({
-        task: req.body.taskId,
+        task: taskId,
         submittedBy: req.user.userId,
-        description: req.body.description,
-        githubUrl: req.body.githubUrl || "",
-        githubCommitSha: req.body.githubCommitSha || "",
-        deployedUrl: req.body.deployedUrl || "",
+        description: description.trim(),
+        githubUrl: githubUrl || "",
+        githubCommitSha: githubCommitSha || "",
+        deployedUrl: deployedUrl || "",
         fileUrl: uploadedFileUrl,
       });
 
@@ -144,7 +157,7 @@ router.get("/:taskId", authMiddleware, async (req, res) => {
 
     const evidence = await Evidence.find({
       task: req.params.taskId,
-    }).populate("submittedBy", "name email");
+    }).sort({ createdAt: -1 }).populate("submittedBy", "name email");
 
     res.json({
       message: "Evidence fetched successfully",

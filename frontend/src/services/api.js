@@ -1,24 +1,48 @@
-const API_BASE_URL = "http://localhost:5000";
+const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || "http://localhost:5000").replace(/\/+$/, "");
+
+async function readResponse(response) {
+  const text = await response.text();
+  let data = {};
+
+  if (text) {
+    try {
+      data = JSON.parse(text);
+    } catch {
+      data = { message: text };
+    }
+  }
+
+  if (!response.ok) {
+    throw new Error(data.message || data.error || `Request failed (${response.status})`);
+  }
+
+  return data;
+}
+
+async function fetchApi(url, options) {
+  try {
+    return await fetch(url, options);
+  } catch (error) {
+    if (error instanceof TypeError) {
+      throw new Error("Unable to reach the ProofFlow API. Check the server and API URL.");
+    }
+    throw error;
+  }
+}
 
 export async function loginUser(email, password) {
-  const response = await fetch(`${API_BASE_URL}/login`, {
+  const response = await fetchApi(`${API_BASE_URL}/login`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
     },
     body: JSON.stringify({ email, password }),
   });
-  const data = await response.json();
-
-  if (!response.ok) {
-    throw new Error(data.message || `API Error: ${response.status}`);
-  }
-
-  return data;
+  return readResponse(response);
 }
 
 async function request(url, token, options = {}) {
-  const response = await fetch(`${API_BASE_URL}${url}`, {
+  const response = await fetchApi(`${API_BASE_URL}${url}`, {
     ...options,
     headers: {
       Authorization: `Bearer ${token}`,
@@ -27,13 +51,7 @@ async function request(url, token, options = {}) {
     },
   });
 
-  const data = await response.json();
-
-  if (!response.ok) {
-    throw new Error(data.message || `API Error: ${response.status}`);
-  }
-
-  return data;
+  return readResponse(response);
 }
 
 export function getProjectHealth(projectId, token) {
@@ -111,7 +129,7 @@ export async function submitEvidence(evidenceData, token) {
     formData.append("file", evidenceData.file);
   }
 
-  const response = await fetch(
+  const response = await fetchApi(
     `${API_BASE_URL}/api/evidence`,
     {
       method: "POST",
@@ -122,13 +140,7 @@ export async function submitEvidence(evidenceData, token) {
     }
   );
 
-  const data = await response.json();
-
-  if (!response.ok) {
-    throw new Error(data.message || "Failed to submit evidence");
-  }
-
-  return data;
+  return readResponse(response);
 }
 
 export function autoVerifyEvidence(evidenceId, token) {
